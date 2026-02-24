@@ -25,11 +25,27 @@ from app.modules.knowledge.router import router as knowledge_router
 setup_logging(log_level=settings.LOG_LEVEL, json_logs=settings.JSON_LOGS)
 setup_sentry(settings.SENTRY_DSN)
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Application lifespan handler.
+    On startup: fires ML classifier training as a non-blocking background task.
+    Keyword fallback is active immediately; ML classification becomes active
+    once training finishes (typically 30–60s depending on API latency).
+    """
+    from app.ai.domain_classifier import auto_train_if_needed
+    asyncio.create_task(auto_train_if_needed())
+    yield
+    # Shutdown: nothing to clean up currently
+
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="8.0.0",
     description="EKA-AI — Governed Automobile Intelligence Platform",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    lifespan=lifespan,
 )
 
 setup_tracing(app)
