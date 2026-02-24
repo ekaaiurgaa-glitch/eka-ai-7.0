@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timedelta, timezone
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from . import schema, model
@@ -56,11 +57,9 @@ async def execute_tool(db: AsyncSession, preview_id: str, actor_id: str, tenant_
     db_preview = result.scalar_one_or_none()
 
     if not db_preview:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Preview not found.")
     
     if db_preview.expires_at < datetime.now(timezone.utc):
-        from fastapi import HTTPException
         raise HTTPException(status_code=400, detail="Preview has expired.")
 
     tool_name = db_preview.tool_name

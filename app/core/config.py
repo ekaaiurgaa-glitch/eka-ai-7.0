@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     SENTRY_DSN: Optional[str] = os.getenv("SENTRY_DSN")
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     JSON_LOGS: bool = os.getenv("JSON_LOGS", "false").lower() == "true"
+    
+    # Tracing
+    JAEGER_ENDPOINT: Optional[str] = os.getenv("JAEGER_ENDPOINT")
+    JAEGER_HOST: str = os.getenv("JAEGER_HOST", "localhost")
+    JAEGER_PORT: int = int(os.getenv("JAEGER_PORT", "6831"))
 
     model_config = {"case_sensitive": True}
 

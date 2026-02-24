@@ -2,10 +2,12 @@ from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 from app.core.config import settings
 from app.core.monitoring import MonitoringMiddleware, metrics_endpoint, setup_sentry
 from app.core.logging_config import setup_logging
 from app.core.middleware import TenantMiddleware, CorrelationIdMiddleware
+from app.core.tracing import setup_tracing
 from app.core.security import create_access_token
 from app.core.dependencies import get_db
 from app.modules.chat.router import router as chat_router
@@ -23,10 +25,12 @@ setup_sentry(settings.SENTRY_DSN)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    version="7.0.0",
+    version="8.0.0",
     description="EKA-AI — Governed Automobile Intelligence Platform",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
 )
+
+setup_tracing(app)
 
 # Rate limiting (graceful no-op if Redis unavailable)
 try:
@@ -59,7 +63,24 @@ app.add_middleware(CorrelationIdMiddleware)
 
 @app.get("/", tags=["Root"])
 async def read_root():
-    return {"message": "Welcome to EKA-AI Platform v7.0", "status": "operational"}
+    return {"message": "Welcome to EKA-AI Platform v8.0", "status": "operational"}
+
+
+@app.get("/health", tags=["Health"])
+async def health_check(db: AsyncSession = Depends(get_db)):
+    """Health check endpoint for load balancer."""
+    try:
+        await db.execute(text("SELECT 1"))
+        from app.core.cache import get_redis_client
+        redis_ok = get_redis_client() is not None
+        return {
+            "status": "healthy",
+            "version": "8.0.0",
+            "database": "ok",
+            "redis": "ok" if redis_ok else "degraded",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Unhealthy: {str(e)}")
 
 
 @app.post("/token", tags=["Auth"])

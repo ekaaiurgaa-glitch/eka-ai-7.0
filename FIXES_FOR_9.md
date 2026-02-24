@@ -53,7 +53,7 @@ ADMIN_PASSWORD=secure_password_here
 DATABASE_URL=postgresql+asyncpg://user:password@localhost/eka_ai
 
 # Initialize
-python init_db.py
+alembic upgrade head
 ```
 
 **Status**: ⏳ DOCUMENTED (1-line change to default)

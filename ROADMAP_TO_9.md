@@ -22,7 +22,7 @@
 - Update `.env.example`: `DATABASE_URL=postgresql+asyncpg://user:password@localhost/eka_ai`
 - Update `QUICKSTART.md`: PostgreSQL setup instructions first
 - Add `docker-compose.yml` with PostgreSQL + pgvector
-- Update `init_db.py`: Check for pgvector extension, create if missing
+- Update migration: Add `CREATE EXTENSION IF NOT EXISTS vector` to init script
 
 **Effort**: 2 hours
 **Impact**: Production-grade persistence

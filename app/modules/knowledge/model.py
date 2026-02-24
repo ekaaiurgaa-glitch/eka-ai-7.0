@@ -14,11 +14,14 @@ class KnowledgeChunk(Base, TenantMixin, TimestampMixin):
     title = Column(String, nullable=False)
     content = Column(Text, nullable=False)
     
-    # Use pgvector if available (PostgreSQL), else JSON (SQLite)
+    # Support both pgvector (PostgreSQL) and JSON (SQLite) embeddings
+    # pgvector is preferred for performance; JSON is fallback for SQLite/dev
     if PGVECTOR_AVAILABLE:
-        embedding = Column(Vector(768))
+        embedding = Column(Vector(768))  # Native vector for similarity search
+        embedding_json = Column(Text, nullable=True)  # Keep for migration/compatibility
     else:
-        embedding_json = Column(Text, nullable=True)
+        embedding = Column(Text, nullable=True)  # Placeholder when pgvector unavailable
+        embedding_json = Column(Text, nullable=True)  # JSON embeddings for SQLite
     
     source_url = Column(String, default="")
     chunk_index = Column(Integer, default=0)

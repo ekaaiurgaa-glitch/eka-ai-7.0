@@ -1,18 +1,11 @@
 from fastapi import HTTPException
+from app.ai import domain_classifier
 
-# Placeholder for Domain Gate
-def is_automobile_query(query: str) -> bool:
-    """
-    Checks if a query is related to automobiles.
-    In a real application, this could be a call to a smaller, specialized LLM,
-    a keyword-based check, or a more sophisticated classifier.
-    """
-    # For now, we'll just do a simple keyword check.
-    keywords = ["car", "vehicle", "engine", "brake", "transmission", "automobile", "maruti", "tata", "hyundai"]
-    return any(keyword in query.lower() for keyword in keywords)
 
-def domain_gate(query: str):
-    if not is_automobile_query(query):
+async def domain_gate(query: str):
+    """Enforce domain lock using ML classifier."""
+    is_auto = await domain_classifier.is_automobile_query(query)
+    if not is_auto:
         raise HTTPException(status_code=403, detail="DOMAIN_GATE_DENY: Query is not related to automobiles.")
 
 # Placeholder for Permission Gate
