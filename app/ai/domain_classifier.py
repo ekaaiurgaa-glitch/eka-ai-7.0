@@ -80,6 +80,8 @@ class DomainClassifier:
     def _load_model(self):
         """Load trained model from disk."""
         try:
+            import os
+            os.makedirs("models", exist_ok=True)
             with open("models/domain_classifier.pkl", "rb") as f:
                 return pickle.load(f)
         except FileNotFoundError:

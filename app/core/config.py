@@ -35,9 +35,7 @@ class Settings(BaseSettings):
     JSON_LOGS: bool = os.getenv("JSON_LOGS", "false").lower() == "true"
     
     # Tracing
-    JAEGER_ENDPOINT: Optional[str] = os.getenv("JAEGER_ENDPOINT")
-    JAEGER_HOST: str = os.getenv("JAEGER_HOST", "localhost")
-    JAEGER_PORT: int = int(os.getenv("JAEGER_PORT", "6831"))
+    JAEGER_ENDPOINT: Optional[str] = os.getenv("JAEGER_ENDPOINT", "http://localhost:4317")
 
     model_config = {"case_sensitive": True}
 

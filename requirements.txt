@@ -35,4 +35,4 @@ sentry-sdk[fastapi]==1.39.1
 opentelemetry-api
 opentelemetry-sdk
 opentelemetry-instrumentation-fastapi
-opentelemetry-exporter-jaeger
+opentelemetry-exporter-otlp-proto-grpc

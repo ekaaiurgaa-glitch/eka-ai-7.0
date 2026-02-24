@@ -14,7 +14,8 @@ async def test_domain_gate_allows_automobile_queries():
 async def test_domain_gate_rejects_non_automobile():
     with pytest.raises(HTTPException) as exc:
         await domain_gate("What is the weather today?")
-    assert "not related to automobiles" in exc.value.detail
+    assert exc.value.status_code == 403
+    assert "DOMAIN_GATE_DENY" in exc.value.detail
 
 
 def test_context_gate_passes_with_vehicle():
