@@ -14,7 +14,7 @@ async def process_chat_query(db: AsyncSession, request: schema.ChatQueryRequest,
     4. Response parsing + confidence gate
     5. Log request to DB
     """
-    governance.domain_gate(request.query)
+    await governance.domain_gate(request.query)
     governance.context_gate(request.query, request.vehicle.model_dump() if request.vehicle else None)
 
     # RAG: retrieve relevant knowledge chunks

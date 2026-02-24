@@ -24,7 +24,7 @@ class MGCalculationRequest(BaseModel):
     monthly_km: int = Field(..., gt=0)
     warranty_status: WarrantyStatus
     usage_type: UsageType
-    tenant_id: str
+    tenant_id: Optional[str] = None
 
 class MGCalculationResponse(BaseModel):
     annual_parts: float
