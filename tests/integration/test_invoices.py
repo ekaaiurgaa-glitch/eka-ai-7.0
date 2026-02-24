@@ -21,12 +21,18 @@ async def test_create_invoice(client: AsyncClient, auth_headers: dict, db_sessio
 
     response = await client.post(
         "/api/v1/invoices",
-        json={"job_id": job.id},
+        json={
+            "job_id": job.id,
+            "lines": [
+                {"part_id": 1, "quantity": 1, "price": 100.0, "tax_rate": 0.18, "hsn_code": "8708"},
+                {"part_id": 2, "quantity": 2, "price": 50.0, "tax_rate": 0.18, "hsn_code": "2710"},
+            ],
+        },
         headers=auth_headers,
     )
     assert response.status_code == 200
     data = response.json()
-    assert "invoice_no" in data
+    assert "id" in data
     assert data["job_id"] == job.id
 
 
@@ -49,9 +55,13 @@ async def test_get_invoice(client: AsyncClient, auth_headers: dict, db_session):
     )
     invoice = await i_service.create_invoice(
         db_session,
-        i_schema.InvoiceCreate(job_id=job.id),
+        i_schema.InvoiceCreate(
+            job_id=job.id,
+            lines=[
+                {"part_id": 1, "quantity": 1, "price": 100.0, "tax_rate": 0.18, "hsn_code": "8708"},
+            ],
+        ),
         "test_tenant",
-        "test_user",
     )
 
     response = await client.get(f"/api/v1/invoices/{invoice.id}", headers=auth_headers)

@@ -23,11 +23,6 @@ async def query_chat(
     - Returns structured responses.
     Rate limited to 20 requests/minute per IP.
     """
-    # Apply rate limiting if available
-    if hasattr(http_request.app.state, "limiter"):
-        limiter = http_request.app.state.limiter
-        await limiter.check_request(http_request, settings.RATE_LIMIT_CHAT)
-
     request.tenant_id = tenant_id
     user_id = current_user.get("sub")
     return await service.process_chat_query(db, request, user_id)

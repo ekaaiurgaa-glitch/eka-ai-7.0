@@ -43,7 +43,7 @@ async def _generate_job_no(db: AsyncSession, db_job_card: model.JobCard) -> str:
 
 async def create_job_card(db: AsyncSession, job_card: schema.JobCardCreate, tenant_id: str, user_id: str) -> model.JobCard:
     db_job_card = model.JobCard(
-        job_no="TEMP",  # Temporary, will update after commit
+        job_no="TEMP",  # Temporary, will update before commit
         tenant_id=tenant_id,
         created_by=user_id,
         state="OPEN",
@@ -51,13 +51,12 @@ async def create_job_card(db: AsyncSession, job_card: schema.JobCardCreate, tena
         vehicle_id=job_card.vehicle_id,
     )
     db.add(db_job_card)
-    await db.commit()
+    await db.flush()  # Flush to get auto-increment ID without committing
     await db.refresh(db_job_card)
     # Generate job number from actual ID to guarantee uniqueness
     db_job_card.job_no = f"JB-{db_job_card.id:04d}"
-    await db.commit()
     await _log_audit(db, "job_card", db_job_card.id, user_id, "create", {"job_no": db_job_card.job_no}, tenant_id)
-    await db.commit()
+    await db.commit()  # Single atomic commit
     return db_job_card
 
 
