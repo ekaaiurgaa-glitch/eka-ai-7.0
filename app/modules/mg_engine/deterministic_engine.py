@@ -52,6 +52,10 @@ def calculate_mg(request: schema.MGCalculationRequest) -> schema.MGCalculationRe
 
     annual_parts = wear_tear_costs["annual_parts_cost"]
     annual_labor = wear_tear_costs["annual_labor_cost"]
+    
+    # Usage-based adjustment (NEW)
+    usage_multiplier = request.monthly_km / 1000  # Base: 1000 km/month
+    annual_parts *= usage_multiplier
 
     city_adj = _get_city_labor_index(request.city)
     risk_adj = RISK_MULTIPLIER.get(request.usage_type, RISK_MULTIPLIER["default"])

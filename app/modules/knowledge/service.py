@@ -4,6 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
 from . import model
 
+try:
+    from pgvector.sqlalchemy import Vector
+    PGVECTOR_AVAILABLE = True
+except ImportError:
+    PGVECTOR_AVAILABLE = False
+
 
 async def get_embedding(text_input: str) -> List[float]:
     """
@@ -15,7 +21,6 @@ async def get_embedding(text_input: str) -> List[float]:
         from app.core.config import settings
         import asyncio
         client = genai.Client(api_key=settings.GEMINI_API_KEY)
-        # Use asyncio.to_thread to avoid blocking the event loop
         result = await asyncio.to_thread(
             client.models.embed_content,
             model="text-embedding-004",
@@ -48,14 +53,25 @@ async def ingest_document(db: AsyncSession, title: str, content: str, tenant_id:
     chunks = _chunk_text(content)
     for idx, chunk_text in enumerate(chunks):
         embedding = await get_embedding(chunk_text)
-        db_chunk = model.KnowledgeChunk(
-            tenant_id=tenant_id,
-            title=title,
-            content=chunk_text,
-            embedding_json=json.dumps(embedding),
-            source_url=source_url,
-            chunk_index=idx,
-        )
+        
+        if PGVECTOR_AVAILABLE:
+            db_chunk = model.KnowledgeChunk(
+                tenant_id=tenant_id,
+                title=title,
+                content=chunk_text,
+                embedding=embedding,
+                source_url=source_url,
+                chunk_index=idx,
+            )
+        else:
+            db_chunk = model.KnowledgeChunk(
+                tenant_id=tenant_id,
+                title=title,
+                content=chunk_text,
+                embedding_json=json.dumps(embedding),
+                source_url=source_url,
+                chunk_index=idx,
+            )
         db.add(db_chunk)
     await db.commit()
     return len(chunks)
@@ -64,27 +80,37 @@ async def ingest_document(db: AsyncSession, title: str, content: str, tenant_id:
 async def similarity_search(db: AsyncSession, query: str, tenant_id: str, top_k: int = 3) -> List[model.KnowledgeChunk]:
     """
     Find top_k most similar knowledge chunks.
-    Uses cosine similarity on in-memory embeddings (SQLite).
-    For PostgreSQL with pgvector, this would use the native <=> operator.
+    Uses pgvector native operator if available, else in-memory numpy.
     """
-    import numpy as np
-
     query_embedding = await get_embedding(query)
-    query_vec = np.array(query_embedding)
-
-    result = await db.execute(
-        select(model.KnowledgeChunk).filter(model.KnowledgeChunk.tenant_id == tenant_id)
-    )
-    chunks = result.scalars().all()
-    if not chunks:
-        return []
-
-    scored = []
-    for chunk in chunks:
-        emb = np.array(json.loads(chunk.embedding_json) if chunk.embedding_json else [0.0] * 768)
-        norm = np.linalg.norm(query_vec) * np.linalg.norm(emb)
-        similarity = float(np.dot(query_vec, emb) / norm) if norm > 0 else 0.0
-        scored.append((similarity, chunk))
-
-    scored.sort(key=lambda x: x[0], reverse=True)
-    return [chunk for _, chunk in scored[:top_k]]
+    
+    if PGVECTOR_AVAILABLE:
+        # Use pgvector native cosine distance
+        result = await db.execute(
+            select(model.KnowledgeChunk)
+            .filter(model.KnowledgeChunk.tenant_id == tenant_id)
+            .order_by(model.KnowledgeChunk.embedding.cosine_distance(query_embedding))
+            .limit(top_k)
+        )
+        return result.scalars().all()
+    else:
+        # Fallback to in-memory numpy
+        import numpy as np
+        query_vec = np.array(query_embedding)
+        
+        result = await db.execute(
+            select(model.KnowledgeChunk).filter(model.KnowledgeChunk.tenant_id == tenant_id)
+        )
+        chunks = result.scalars().all()
+        if not chunks:
+            return []
+        
+        scored = []
+        for chunk in chunks:
+            emb = np.array(json.loads(chunk.embedding_json) if chunk.embedding_json else [0.0] * 768)
+            norm = np.linalg.norm(query_vec) * np.linalg.norm(emb)
+            similarity = float(np.dot(query_vec, emb) / norm) if norm > 0 else 0.0
+            scored.append((similarity, chunk))
+        
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [chunk for _, chunk in scored[:top_k]]
