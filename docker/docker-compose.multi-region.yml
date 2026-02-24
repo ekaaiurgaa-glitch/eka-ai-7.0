@@ -1,0 +1,122 @@
+version: '3.8'
+
+# Multi-Region Deployment Simulation
+# Simulates a 3-region active-active deployment for testing
+
+services:
+  # Region 1 - US East
+  app-us-east:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    environment:
+      - REGION=us-east
+      - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///./eka_ai.db}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key}
+      - REDIS_URL=redis://redis-us-east:6379
+      - LOG_LEVEL=INFO
+    ports:
+      - "8001:8000"
+    depends_on:
+      - redis-us-east
+      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  redis-us-east:
+    image: redis:7-alpine
+    volumes:
+      - redis-us-east-data:/data
+
+  # Region 2 - EU West
+  app-eu-west:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    environment:
+      - REGION=eu-west
+      - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///./eka_ai.db}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key}
+      - REDIS_URL=redis://redis-eu-west:6379
+      - LOG_LEVEL=INFO
+    ports:
+      - "8002:8000"
+    depends_on:
+      - redis-eu-west
+      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  redis-eu-west:
+    image: redis:7-alpine
+    volumes:
+      - redis-eu-west-data:/data
+
+  # Region 3 - AP South
+  app-ap-south:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    environment:
+      - REGION=ap-south
+      - DATABASE_URL=${DATABASE_URL:-sqlite+aiosqlite:///./eka_ai.db}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key}
+      - REDIS_URL=redis://redis-ap-south:6379
+      - LOG_LEVEL=INFO
+    ports:
+      - "8003:8000"
+    depends_on:
+      - redis-ap-south
+      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  redis-ap-south:
+    image: redis:7-alpine
+    volumes:
+      - redis-ap-south-data:/data
+
+  # Shared PostgreSQL (in production, each region would have read replicas)
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=eka
+      - POSTGRES_PASSWORD=eka_secret
+      - POSTGRES_DB=eka_ai
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eka"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Load Balancer (nginx)
+  load-balancer:
+    image: nginx:alpine
+    ports:
+      - "8000:80"
+    volumes:
+      - ./docker/nginx-lb.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app-us-east
+      - app-eu-west
+      - app-ap-south
+
+volumes:
+  redis-us-east-data:
+  redis-eu-west-data:
+  redis-ap-south-data:
+  postgres-data:
