@@ -23,38 +23,21 @@ class JobCardResponse(BaseModel):
 
 
 class EstimateLine(BaseModel):
-<<<<<<< HEAD
     part_id: Optional[int] = None
     description: Optional[str] = None
     quantity: int
     price: float
     tax_rate: float = 0.18  # Default GST
 
-class EstimateBase(BaseModel):
-    lines: list[EstimateLine]
-=======
-    description: str
-    quantity: int
-    price: float
-    tax_rate: float = 0.18
-
->>>>>>> 091bcd42a89e389383604168e2df6463590a094c
 
 class EstimateCreate(BaseModel):
     lines: List[EstimateLine]
 
-<<<<<<< HEAD
-class Estimate(BaseModel):
-    id: int
-    job_id: int
-    lines: list[EstimateLine]
-=======
 
 class Estimate(BaseModel):
     id: int
     job_id: int
-    lines: list
->>>>>>> 091bcd42a89e389383604168e2df6463590a094c
+    lines: list[EstimateLine]
     total_parts: float
     total_labor: float
     tax_breakdown: dict
