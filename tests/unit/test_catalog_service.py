@@ -54,7 +54,11 @@ async def test_create_and_get_labor_rate(db_session):
     assert rate.id is not None
 
     retrieved = await service.get_labor_rate(db_session, "brake_service", "Mumbai", "test_tenant")
-    assert retrieved["rate_per_hour"] == 500.0 or retrieved.rate_per_hour == 500.0
+    # Service returns dict when cached, ORM object when not cached
+    if isinstance(retrieved, dict):
+        assert retrieved["rate_per_hour"] == 500.0
+    else:
+        assert retrieved.rate_per_hour == 500.0
 
 
 @pytest.mark.asyncio

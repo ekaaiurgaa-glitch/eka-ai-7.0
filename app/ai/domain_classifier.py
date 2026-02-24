@@ -100,9 +100,16 @@ class DomainClassifier:
         if not self.model:
             return self._keyword_fallback(query)
         
-        embedding = await get_embedding(query)
-        prediction = self.model.predict([embedding])[0]
-        return prediction == 1
+        try:
+            embedding = await get_embedding(query)
+            # Check if embedding is valid (not all zeros from fallback)
+            if all(v == 0.0 for v in embedding):
+                return self._keyword_fallback(query)
+            prediction = self.model.predict([embedding])[0]
+            return prediction == 1
+        except Exception:
+            # If embeddings fail (no API key), use keyword fallback
+            return self._keyword_fallback(query)
 
 
 # Global instance
