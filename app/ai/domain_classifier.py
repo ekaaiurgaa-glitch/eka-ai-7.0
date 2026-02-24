@@ -1,8 +1,15 @@
+import os
+import asyncio
+import logging
 import pickle
 import numpy as np
 from typing import List
 from sklearn.linear_model import LogisticRegression
 from app.modules.knowledge.service import get_embedding
+
+logger = logging.getLogger(__name__)
+
+MODEL_PATH = os.path.join("models", "domain_classifier.pkl")
 
 # Training data: 1=automobile, 0=non-automobile
 TRAINING_DATA = [
@@ -60,22 +67,23 @@ class DomainClassifier:
     
     async def train(self):
         """Train the classifier on embedding vectors."""
-        print("Training domain classifier...")
+        logger.info("Training domain classifier on %d samples...", len(TRAINING_DATA))
         X, y = [], []
         for text, label in TRAINING_DATA:
             embedding = await get_embedding(text)
             X.append(embedding)
             y.append(label)
-        
+
         self.model = LogisticRegression(max_iter=1000)
         self.model.fit(X, y)
-        
-        # Save model
-        import os
+
         os.makedirs("models", exist_ok=True)
-        with open("models/domain_classifier.pkl", "wb") as f:
+        with open(MODEL_PATH, "wb") as f:
             pickle.dump(self.model, f)
-        print(f"Model trained with {len(X)} samples, accuracy: {self.model.score(X, y):.2%}")
+        logger.info(
+            "Domain classifier trained — %d samples, training accuracy: %.2f%%",
+            len(X), self.model.score(X, y) * 100,
+        )
     
     def _load_model(self):
         """Load trained model from disk."""
