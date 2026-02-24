@@ -32,8 +32,10 @@ class EstimateBase(BaseModel):
 class EstimateCreate(EstimateBase):
     pass
 
-class Estimate(EstimateBase):
+class Estimate(BaseModel):
     id: int
+    job_id: int
+    lines: list[EstimateLine]
     total_parts: float
     total_labor: float
     tax_breakdown: dict
