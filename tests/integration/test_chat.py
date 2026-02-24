@@ -23,7 +23,7 @@ async def test_chat_context_gate_trigger(client: AsyncClient, auth_headers: dict
         json={"query": "My brake is making noise"},
         headers=auth_headers,
     )
-    assert response.status_code == 400
+    assert response.status_code == 422
     assert "CONTEXT_REQUEST" in response.json()["detail"]
 
 
