@@ -1,46 +1,63 @@
-from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, select
 from app.modules.job_cards.model import JobCard, Estimate
 from app.modules.invoices.model import Invoice
 
-def get_workshop_dashboard_data(db: Session, tenant_id: str):
-    """
-    Generates data for the workshop dashboard.
-    These queries can be slow on large datasets and should be optimized
-    with materialized views or a separate analytics service in production.
-    """
-    # jobs_by_state = db.query(JobCard.state, func.count(JobCard.id)).filter(JobCard.tenant_id == tenant_id).group_by(JobCard.state).all()
 
-    # pending_approvals = db.query(JobCard).filter(JobCard.tenant_id == tenant_id, JobCard.state == 'APPROVAL_PENDING').count()
+async def get_workshop_dashboard_data(db: AsyncSession, tenant_id: str) -> dict:
+    """Real dashboard queries from the DB."""
+    # Jobs grouped by state
+    result = await db.execute(
+        select(JobCard.state, func.count(JobCard.id))
+        .filter(JobCard.tenant_id == tenant_id)
+        .group_by(JobCard.state)
+    )
+    jobs_by_state = {state: count for state, count in result.all()}
 
-    # # These are simplified examples. Real calculations would be more complex.
-    # total_revenue = db.query(func.sum(Invoice.total_amount)).filter(Invoice.tenant_id == tenant_id).scalar() or 0
-    
-    # # Gross margin would require knowing the cost of parts and labor.
-    # gross_margin = total_revenue * 0.3 # Placeholder
+    # Pending approvals
+    result = await db.execute(
+        select(func.count(JobCard.id)).filter(
+            JobCard.tenant_id == tenant_id, JobCard.state == "APPROVAL_PENDING"
+        )
+    )
+    pending_approvals = result.scalar() or 0
 
-    # # Low stock alerts would come from an inventory module.
-    # low_stock_alerts = 2 # Placeholder
+    # Total revenue from invoices
+    result = await db.execute(
+        select(func.sum(Invoice.total_amount)).filter(Invoice.tenant_id == tenant_id)
+    )
+    total_revenue = result.scalar() or 0.0
+    gross_margin = round(total_revenue * 0.3, 2)
 
     return {
-        "revenue": 12345.67,
-        "gross_margin": 4567.89,
-        "jobs_by_state": {"OPEN": 5, "IN_PROGRESS": 3},
-        "pending_approvals": 2,
-        "low_stock_alerts": 1,
+        "revenue": round(total_revenue, 2),
+        "gross_margin": gross_margin,
+        "jobs_by_state": jobs_by_state,
+        "pending_approvals": pending_approvals,
     }
 
-def get_fleet_dashboard_data(db: Session, tenant_id: str):
-    # Placeholder for fleet dashboard data
+
+async def get_fleet_dashboard_data(db: AsyncSession, tenant_id: str) -> dict:
+    result = await db.execute(
+        select(func.count(JobCard.id)).filter(JobCard.tenant_id == tenant_id)
+    )
+    total_jobs = result.scalar() or 0
     return {
+        "total_jobs": total_jobs,
         "mg_commitments_vs_actual_spend": {},
         "cost_per_vehicle": {},
         "downtime_metrics": {},
     }
 
-def get_owner_dashboard_data(db: Session, tenant_id: str, vehicle_id: int):
-    # Placeholder for owner dashboard data
-    return {
-        "service_history": [],
-        "upcoming_service_due": [],
-    }
+
+async def get_owner_dashboard_data(db: AsyncSession, tenant_id: str, vehicle_id: int) -> dict:
+    result = await db.execute(
+        select(JobCard).filter(
+            JobCard.tenant_id == tenant_id, JobCard.vehicle_id == vehicle_id
+        ).order_by(JobCard.created_at.desc()).limit(10)
+    )
+    service_history = [
+        {"id": jc.id, "job_no": jc.job_no, "state": jc.state, "complaint": jc.complaint}
+        for jc in result.scalars().all()
+    ]
+    return {"vehicle_id": vehicle_id, "service_history": service_history, "upcoming_service_due": []}

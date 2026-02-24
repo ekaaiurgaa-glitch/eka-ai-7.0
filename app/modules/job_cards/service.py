@@ -1,9 +1,12 @@
-from sqlalchemy.orm import Session
+from datetime import datetime, timezone
+from typing import List
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from fastapi import HTTPException
 from . import model, schema
 from app.db.models import AuditLog
 
-# Define the allowed state transitions
+
 ALLOWED_TRANSITIONS = {
     "OPEN": ["DIAGNOSIS", "CANCELLED"],
     "DIAGNOSIS": ["ESTIMATE_PENDING", "CANCELLED"],
@@ -20,82 +23,108 @@ ALLOWED_TRANSITIONS = {
     "CANCELLED": [],
 }
 
-def _log_audit(db: Session, entity_type: str, entity_id: int, actor_id: str, action: str, payload: dict, tenant_id: str):
+
+async def _log_audit(db: AsyncSession, entity_type: str, entity_id: str, actor_id: str, action: str, payload: dict, tenant_id: str):
     audit_log = AuditLog(
         entity_type=entity_type,
-        entity_id=entity_id,
+        entity_id=str(entity_id),
         actor_id=actor_id,
         action=action,
         payload=payload,
-        tenant_id=tenant_id
+        tenant_id=tenant_id,
     )
     db.add(audit_log)
 
-def create_job_card(db: Session, job_card: schema.JobCardCreate, tenant_id: str, user_id: str):
-    # Placeholder for creating a job card without db
-    from datetime import datetime
-    return model.JobCard(
-        id=1,
-        job_no="JB-0001",
+
+async def _generate_job_no(db: AsyncSession) -> str:
+    result = await db.execute(select(model.JobCard))
+    count = len(result.scalars().all())
+    return f"JB-{(count + 1):04d}"
+
+
+async def create_job_card(db: AsyncSession, job_card: schema.JobCardCreate, tenant_id: str, user_id: str) -> model.JobCard:
+    job_no = await _generate_job_no(db)
+    db_job_card = model.JobCard(
+        job_no=job_no,
         tenant_id=tenant_id,
         created_by=user_id,
         state="OPEN",
         complaint=job_card.complaint,
         vehicle_id=job_card.vehicle_id,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
     )
+    db.add(db_job_card)
+    await db.commit()
+    await db.refresh(db_job_card)
+    await _log_audit(db, "job_card", db_job_card.id, user_id, "create", {"job_no": job_no}, tenant_id)
+    await db.commit()
+    return db_job_card
 
-def get_job_card(db: Session, job_card_id: int, tenant_id: str):
-    job_card = db.query(model.JobCard).filter(model.JobCard.id == job_card_id, model.JobCard.tenant_id == tenant_id).first()
+
+async def get_job_card(db: AsyncSession, job_card_id: int, tenant_id: str) -> model.JobCard:
+    result = await db.execute(
+        select(model.JobCard).filter(model.JobCard.id == job_card_id, model.JobCard.tenant_id == tenant_id)
+    )
+    job_card = result.scalar_one_or_none()
     if not job_card:
         raise HTTPException(status_code=404, detail="Job card not found")
     return job_card
 
-def transition_job_card_state(db: Session, job_card_id: int, new_state: str, tenant_id: str, user_id: str):
-    db_job_card = get_job_card(db, job_card_id, tenant_id)
+
+async def transition_job_card_state(db: AsyncSession, job_card_id: int, new_state: str, tenant_id: str, user_id: str) -> model.JobCard:
+    db_job_card = await get_job_card(db, job_card_id, tenant_id)
 
     if new_state not in ALLOWED_TRANSITIONS.get(db_job_card.state, []):
         raise HTTPException(status_code=400, detail=f"Invalid state transition from {db_job_card.state} to {new_state}")
 
-    # Add more complex rules here, e.g., check for approved estimate before moving to REPAIR
     if new_state == "REPAIR":
-        estimate = db.query(model.Estimate).filter(model.Estimate.job_id == job_card_id, model.Estimate.approved == True).first()
-        if not estimate:
+        result = await db.execute(
+            select(model.Estimate).filter(
+                model.Estimate.job_id == job_card_id,
+                model.Estimate.approved == True,
+            )
+        )
+        if not result.scalar_one_or_none():
             raise HTTPException(status_code=400, detail="Cannot move to REPAIR without an approved estimate.")
 
     old_state = db_job_card.state
     db_job_card.state = new_state
-    
-    _log_audit(db, "job_card", db_job_card.id, user_id, "transition_state", {"old_state": old_state, "new_state": new_state}, tenant_id)
-    db.commit()
-    db.refresh(db_job_card)
-
+    await _log_audit(db, "job_card", db_job_card.id, user_id, "transition_state", {"old_state": old_state, "new_state": new_state}, tenant_id)
+    await db.commit()
+    await db.refresh(db_job_card)
     return db_job_card
 
-def create_estimate(db: Session, job_card_id: int, estimate: schema.EstimateCreate, tenant_id: str, user_id: str):
-    db_job_card = get_job_card(db, job_card_id, tenant_id)
-    
-    # In a real app, you would fetch prices from a catalog
-    total_parts = sum(line.price * line.quantity for line in estimate.lines)
-    total_labor = 500 # Placeholder
-    tax_breakdown = {"GST@18": total_parts * 0.18} # Placeholder
+
+async def create_estimate(db: AsyncSession, job_card_id: int, estimate: schema.EstimateCreate, tenant_id: str, user_id: str) -> model.Estimate:
+    await get_job_card(db, job_card_id, tenant_id)
+
+    # Try to fetch real prices from catalog; fall back to schema prices
+    total_parts = 0.0
+    total_labor = 500.0
+    try:
+        from app.modules.catalog.service import get_part, get_labor_rate
+        total_parts = sum(line.price * line.quantity for line in estimate.lines)
+        labor = await get_labor_rate(db, "general_service", "default", tenant_id)
+        if labor:
+            total_labor = labor.rate_per_hour * labor.estimated_hours
+    except Exception:
+        total_parts = sum(line.price * line.quantity for line in estimate.lines)
+
+    tax_breakdown = {"GST@18": round(total_parts * 0.18, 2)}
 
     db_estimate = model.Estimate(
         job_id=job_card_id,
-        lines=[line.dict() for line in estimate.lines],
+        lines=[line.model_dump() for line in estimate.lines],
         total_parts=total_parts,
         total_labor=total_labor,
         tax_breakdown=tax_breakdown,
-        tenant_id=tenant_id
+        tenant_id=tenant_id,
     )
     db.add(db_estimate)
-    
-    # Transition job card state
-    transition_job_card_state(db, job_card_id, "ESTIMATE_PENDING", tenant_id, user_id)
-    
-    _log_audit(db, "estimate", db_estimate.id, user_id, "create", db_estimate.__dict__, tenant_id)
-    db.commit()
-    db.refresh(db_estimate)
-    
+    await db.commit()
+    await db.refresh(db_estimate)
+
+    await transition_job_card_state(db, job_card_id, "ESTIMATE_PENDING", tenant_id, user_id)
+    await _log_audit(db, "estimate", db_estimate.id, user_id, "create",
+                     {"total_parts": total_parts, "total_labor": total_labor}, tenant_id)
+    await db.commit()
     return db_estimate

@@ -1,32 +1,47 @@
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from app.core.config import settings
 
-genai.configure(api_key=settings.GEMINI_API_KEY)
+client = genai.Client(api_key=settings.GEMINI_API_KEY)
 
-# This is a placeholder. In a real application, you would have more robust error handling and logging.
-async def call_gemini(prompt: str, system_prompt: str = None):
+
+async def call_gemini(prompt: str, system_prompt: str = None) -> str:
     """
-    Calls the Gemini API with the given prompt and system prompt.
+    Calls the Gemini API with the given prompt and optional system prompt.
+    Uses the new google-genai SDK (google.genai).
     """
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash', system_instruction=system_prompt)
-        response = await model.generate_content_async(prompt)
+        config = types.GenerateContentConfig(
+            system_instruction=system_prompt,
+        ) if system_prompt else None
+
+        response = await client.aio.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=config,
+        )
         return response.text
     except Exception as e:
-        # In a real app, you would have more specific error handling
-        # and probably log the error.
         print(f"Error calling Gemini API: {e}")
         return "Error: Could not get a response from the AI model."
+
 
 async def call_gemini_with_tools(prompt: str, tools: list, system_prompt: str = None):
     """
     Calls the Gemini API with tools (for function calling).
+    Uses the new google-genai SDK (google.genai).
     """
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash', tools=tools, system_instruction=system_prompt)
-        response = await model.generate_content_async(prompt)
+        config = types.GenerateContentConfig(
+            tools=tools,
+            system_instruction=system_prompt,
+        )
+        response = await client.aio.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=config,
+        )
         return response.candidates[0].content.parts
     except Exception as e:
         print(f"Error calling Gemini API with tools: {e}")
         return "Error: Could not get a response from the AI model."
-

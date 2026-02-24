@@ -7,9 +7,13 @@ psycopg2-binary
 python-dotenv
 requests
 google-genai
+python-multipart
+python-jose[cryptography]
+passlib[bcrypt]
 ruff
 black
 pytest
+pytest-asyncio
 httpx
 structlog
 pydantic-settings
