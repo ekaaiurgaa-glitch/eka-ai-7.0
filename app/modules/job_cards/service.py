@@ -37,9 +37,11 @@ async def _log_audit(db: AsyncSession, entity_type: str, entity_id: str, actor_i
 
 
 async def _generate_job_no(db: AsyncSession) -> str:
-    result = await db.execute(select(model.JobCard))
-    count = len(result.scalars().all())
-    return f"JB-{(count + 1):04d}"
+    # Use MAX(id) to avoid race conditions with concurrent requests
+    result = await db.execute(select(model.JobCard.id).order_by(model.JobCard.id.desc()).limit(1))
+    max_id = result.scalar_one_or_none()
+    next_id = (max_id or 0) + 1
+    return f"JB-{next_id:04d}"
 
 
 async def create_job_card(db: AsyncSession, job_card: schema.JobCardCreate, tenant_id: str, user_id: str) -> model.JobCard:

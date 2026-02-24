@@ -6,7 +6,7 @@ from app.db.base import Base, TenantMixin, TimestampMixin
 class JobCard(Base, TenantMixin, TimestampMixin):
     id = Column(Integer, primary_key=True, index=True)
     job_no = Column(String, unique=True, index=True)
-    vehicle_id = Column(Integer, index=True)  # Assuming a Vehicle model exists
+    vehicle_id = Column(Integer, ForeignKey("vehicle.id"), index=True)
     complaint = Column(String)
     state = Column(String, default="OPEN")
     created_by = Column(String)  # User ID

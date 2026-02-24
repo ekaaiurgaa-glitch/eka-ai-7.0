@@ -18,6 +18,15 @@ httpx
 structlog
 pydantic-settings
 
+# Async DB drivers
+aiosqlite
+asyncpg
+
+# RAG & Caching
+numpy
+redis
+slowapi
+
 # Monitoring
 prometheus-client==0.19.0
 sentry-sdk[fastapi]==1.39.1

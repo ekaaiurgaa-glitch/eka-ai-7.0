@@ -13,8 +13,11 @@ async def get_embedding(text_input: str) -> List[float]:
     try:
         from google import genai
         from app.core.config import settings
+        import asyncio
         client = genai.Client(api_key=settings.GEMINI_API_KEY)
-        result = client.models.embed_content(
+        # Use asyncio.to_thread to avoid blocking the event loop
+        result = await asyncio.to_thread(
+            client.models.embed_content,
             model="text-embedding-004",
             contents=text_input,
         )

@@ -10,7 +10,9 @@ async def get_part(db: AsyncSession, part_id: int, tenant_id: str) -> model.Part
     cache_key = f"part:{tenant_id}:{part_id}"
     cached = cache_get(cache_key)
     if cached:
-        return model.Part(**cached)
+        # Return dict instead of detached instance to avoid SQLAlchemy session issues
+        # Caller should handle dict or re-query if session operations needed
+        return cached
 
     result = await db.execute(
         select(model.Part).filter(model.Part.id == part_id, model.Part.tenant_id == tenant_id)
@@ -34,7 +36,8 @@ async def get_labor_rate(db: AsyncSession, service_type: str, city: str, tenant_
     cache_key = f"labor:{tenant_id}:{service_type}:{city}"
     cached = cache_get(cache_key)
     if cached:
-        return model.LaborRate(**cached)
+        # Return dict instead of detached instance
+        return cached
 
     result = await db.execute(
         select(model.LaborRate).filter(

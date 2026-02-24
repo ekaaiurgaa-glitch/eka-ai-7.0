@@ -1,0 +1,41 @@
+import pytest
+from app.ai.governance import domain_gate, context_gate, confidence_gate
+from fastapi import HTTPException
+
+
+def test_domain_gate_allows_automobile_queries():
+    domain_gate("My car engine is overheating")
+    domain_gate("Brake pads need replacement")
+    domain_gate("Check engine light is on")
+
+
+def test_domain_gate_rejects_non_automobile():
+    with pytest.raises(HTTPException) as exc:
+        domain_gate("What is the weather today?")
+    assert "not related to automobiles" in exc.value.detail
+
+
+def test_context_gate_passes_with_vehicle():
+    vehicle = {"make": "Maruti", "model": "Swift", "year": 2019, "fuel": "petrol"}
+    context_gate("Engine overheating issue", vehicle)
+
+
+def test_context_gate_fails_without_vehicle_for_diagnostic():
+    with pytest.raises(HTTPException) as exc:
+        context_gate("My brake is making noise", None)
+    assert "CONTEXT_REQUEST" in exc.value.detail
+
+
+def test_context_gate_allows_general_query_without_vehicle():
+    context_gate("What causes engine overheating?", None)
+
+
+def test_confidence_gate_passes_high_confidence():
+    confidence_gate(85.0)
+    confidence_gate(70.0)
+
+
+def test_confidence_gate_fails_low_confidence():
+    with pytest.raises(HTTPException) as exc:
+        confidence_gate(45.0)
+    assert "LOW_CONFIDENCE" in exc.value.detail
