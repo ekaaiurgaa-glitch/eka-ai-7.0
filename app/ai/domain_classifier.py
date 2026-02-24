@@ -128,5 +128,39 @@ async def is_automobile_query(query: str) -> bool:
 
 
 async def train_classifier():
-    """Train and save the classifier."""
+    """Train and save the classifier. Used by train_classifier.py script."""
     await _classifier.train()
+
+
+async def auto_train_if_needed() -> None:
+    """
+    Background startup task.
+    - Skips silently if model already exists.
+    - Skips silently if GEMINI_API_KEY is absent (keyword fallback continues).
+    - On success, reloads the trained model into the global singleton so all
+      subsequent requests immediately use ML classification.
+    - Any failure is logged as a warning — app continues with keyword fallback.
+    """
+    from app.core.config import settings
+
+    if os.path.exists(MODEL_PATH):
+        logger.info("Domain classifier model found at '%s' — skipping auto-train", MODEL_PATH)
+        _classifier.model = _classifier._load_model()
+        return
+
+    if not settings.GEMINI_API_KEY:
+        logger.warning(
+            "GEMINI_API_KEY not set — domain gate will use keyword fallback until key is provided"
+        )
+        return
+
+    logger.info("Domain classifier model not found — starting background training...")
+    try:
+        await _classifier.train()
+        # Reload into singleton so live requests use the freshly trained model
+        _classifier.model = _classifier._load_model()
+        logger.info("Domain classifier ready — ML classification active")
+    except Exception as exc:
+        logger.warning(
+            "Domain classifier auto-training failed (%s) — keyword fallback active", exc
+        )
