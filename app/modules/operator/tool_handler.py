@@ -59,7 +59,11 @@ async def execute_tool(db: AsyncSession, preview_id: str, actor_id: str, tenant_
     if not db_preview:
         raise HTTPException(status_code=404, detail="Preview not found.")
     
-    if db_preview.expires_at < datetime.now(timezone.utc):
+    # Handle timezone comparison (SQLite stores naive datetimes)
+    expires_at = db_preview.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Preview has expired.")
 
     tool_name = db_preview.tool_name
