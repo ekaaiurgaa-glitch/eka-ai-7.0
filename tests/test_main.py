@@ -6,4 +6,6 @@ client = TestClient(app)
 def test_read_main():
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json() == {"message": "Welcome to EKA-AI Platform"}
+    data = response.json()
+    assert "Welcome to EKA-AI Platform" in data["message"]
+    assert data["status"] == "operational"
