@@ -26,3 +26,21 @@ class Estimate(Base, TenantMixin, TimestampMixin):
 
     # Relationships
     job_card = relationship("JobCard", back_populates="estimates")
+
+
+class JobSummary(Base, TenantMixin, TimestampMixin):
+    """Cache for AI-generated job card summaries."""
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(Integer, ForeignKey("jobcard.id"), unique=True, index=True)
+    job_state_at_summary = Column(String)  # Invalidate cache when job state changes
+    
+    # Summary fields
+    technical_summary = Column(String)
+    customer_summary = Column(String)
+    urgency = Column(String)  # low, medium, high, critical
+    estimated_cost = Column(Float)
+    recommended_action = Column(String)
+    
+    # Metadata
+    generated_at = Column(DateTime)
+    force_refresh = Column(Boolean, default=False)

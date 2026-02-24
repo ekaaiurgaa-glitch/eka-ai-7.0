@@ -64,3 +64,44 @@ def auth_token() -> str:
 @pytest.fixture
 def auth_headers(auth_token: str) -> dict:
     return {"Authorization": f"Bearer {auth_token}"}
+
+
+@pytest_asyncio.fixture
+async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+    """Alias for client fixture for consistency."""
+    async def override_get_db():
+        yield db_session
+    app.dependency_overrides[get_db] = override_get_db
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield ac
+    app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture
+async def test_job_card(async_client: AsyncClient, auth_token: str) -> dict:
+    """Create a test job card with brake complaint."""
+    # First create a vehicle
+    vehicle_response = await async_client.post(
+        "/api/v1/vehicles",
+        json={
+            "vin": "TEST123456",
+            "make": "Honda",
+            "model": "City",
+            "year": 2020,
+            "owner_name": "Test Owner",
+            "owner_phone": "1234567890",
+        },
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    vehicle = vehicle_response.json()
+    
+    # Create job card
+    job_response = await async_client.post(
+        "/api/v1/job-cards",
+        json={
+            "vehicle_id": vehicle["id"],
+            "complaint": "brake pads worn, squeaking noise",
+        },
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    return job_response.json()
