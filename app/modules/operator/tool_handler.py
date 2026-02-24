@@ -55,12 +55,13 @@ async def execute_tool(db: AsyncSession, preview_id: str, actor_id: str, tenant_
     )
     db_preview = result.scalar_one_or_none()
 
-    if not db_preview or db_preview.expires_at < datetime.now(timezone.utc):
-        return schema.OperatorExecutionResponse(
-            execution_id=str(uuid.uuid4()),
-            status="error",
-            result={"message": "Preview not found or expired."},
-        )
+    if not db_preview:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Preview not found.")
+    
+    if db_preview.expires_at < datetime.now(timezone.utc):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Preview has expired.")
 
     tool_name = db_preview.tool_name
     args = db_preview.args_json

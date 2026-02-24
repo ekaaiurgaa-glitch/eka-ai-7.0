@@ -18,7 +18,7 @@ cp .env.example .env
 ### 3. Initialize Database
 
 ```bash
-python init_db.py
+alembic upgrade head
 ```
 
 ### 4. Start Server
@@ -98,8 +98,10 @@ curl -X POST http://localhost:8000/api/v1/mg/calculate \
   -d '{
     "make": "Tata",
     "model": "Nexon",
+    "year": 2021,
     "fuel_type": "diesel",
     "city": "Mumbai",
+    "monthly_km": 2500,
     "usage_type": "personal",
     "warranty_status": "expired"
   }'

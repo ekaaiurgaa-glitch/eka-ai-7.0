@@ -69,10 +69,10 @@ async def login_for_access_token(
 ):
     """
     Development login endpoint.
-    Default credentials: admin / admin
+    Default credentials: admin / admin (configurable via env)
     Returns a JWT with full permissions embedded.
     """
-    if form_data.username != "admin" or form_data.password != "admin":
+    if form_data.username != settings.ADMIN_USERNAME or form_data.password != settings.ADMIN_PASSWORD:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
