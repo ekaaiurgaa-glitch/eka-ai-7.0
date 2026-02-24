@@ -9,8 +9,8 @@ class VehicleContext(BaseModel):
 
 class ChatQueryRequest(BaseModel):
     query: str
-    vehicle: Optional[VehicleContext]
-    tenant_id: str
+    vehicle: Optional[VehicleContext] = None
+    tenant_id: Optional[str] = None
 
 class ChatQueryResponse(BaseModel):
     issue_summary: str
