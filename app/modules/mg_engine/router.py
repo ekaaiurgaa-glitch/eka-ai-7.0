@@ -18,4 +18,5 @@ async def calculate_mg(
     Calculates the Maintenance Guarantee (MG) amount and saves a proposal.
     Uses the deterministic engine — no AI math is performed here.
     """
+    request.tenant_id = tenant_id
     return await service.get_mg_calculation_and_save_proposal(db, request)
