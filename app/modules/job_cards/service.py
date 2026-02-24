@@ -36,18 +36,14 @@ async def _log_audit(db: AsyncSession, entity_type: str, entity_id: str, actor_i
     db.add(audit_log)
 
 
-async def _generate_job_no(db: AsyncSession) -> str:
-    # Use MAX(id) to avoid race conditions with concurrent requests
-    result = await db.execute(select(model.JobCard.id).order_by(model.JobCard.id.desc()).limit(1))
-    max_id = result.scalar_one_or_none()
-    next_id = (max_id or 0) + 1
-    return f"JB-{next_id:04d}"
+async def _generate_job_no(db: AsyncSession, db_job_card: model.JobCard) -> str:
+    # Generate job number from actual ID after commit to guarantee uniqueness
+    return f"JB-{db_job_card.id:04d}"
 
 
 async def create_job_card(db: AsyncSession, job_card: schema.JobCardCreate, tenant_id: str, user_id: str) -> model.JobCard:
-    job_no = await _generate_job_no(db)
     db_job_card = model.JobCard(
-        job_no=job_no,
+        job_no="TEMP",  # Temporary, will update after commit
         tenant_id=tenant_id,
         created_by=user_id,
         state="OPEN",
@@ -57,7 +53,10 @@ async def create_job_card(db: AsyncSession, job_card: schema.JobCardCreate, tena
     db.add(db_job_card)
     await db.commit()
     await db.refresh(db_job_card)
-    await _log_audit(db, "job_card", db_job_card.id, user_id, "create", {"job_no": job_no}, tenant_id)
+    # Generate job number from actual ID to guarantee uniqueness
+    db_job_card.job_no = f"JB-{db_job_card.id:04d}"
+    await db.commit()
+    await _log_audit(db, "job_card", db_job_card.id, user_id, "create", {"job_no": db_job_card.job_no}, tenant_id)
     await db.commit()
     return db_job_card
 
@@ -107,7 +106,11 @@ async def create_estimate(db: AsyncSession, job_card_id: int, estimate: schema.E
         total_parts = sum(line.price * line.quantity for line in estimate.lines)
         labor = await get_labor_rate(db, "general_service", "default", tenant_id)
         if labor:
-            total_labor = labor.rate_per_hour * labor.estimated_hours
+            # Handle both dict (from cache) and ORM object cases
+            if isinstance(labor, dict):
+                total_labor = labor["rate_per_hour"] * labor["estimated_hours"]
+            else:
+                total_labor = labor.rate_per_hour * labor.estimated_hours
     except Exception:
         total_parts = sum(line.price * line.quantity for line in estimate.lines)
 

@@ -36,15 +36,18 @@ ALLOWED_ORIGINS: List[str] = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000
 
 ### ✅ #6 - Race condition in job number generation
 **Issue:** `_generate_job_no()` counted all rows, causing duplicate job numbers under concurrent load
-**Fix:** Changed to use `MAX(id)` approach:
+**Fix:** Generate job number from actual ID after commit to guarantee uniqueness:
 ```python
-async def _generate_job_no(db: AsyncSession) -> str:
-    result = await db.execute(select(model.JobCard.id).order_by(model.JobCard.id.desc()).limit(1))
-    max_id = result.scalar_one_or_none()
-    next_id = (max_id or 0) + 1
-    return f"JB-{next_id:04d}"
+async def create_job_card(db: AsyncSession, ...):
+    db_job_card = model.JobCard(job_no="TEMP", ...)  # Temporary placeholder
+    db.add(db_job_card)
+    await db.commit()
+    await db.refresh(db_job_card)
+    # Now we have the real ID - generate job number from it
+    db_job_card.job_no = f"JB-{db_job_card.id:04d}"
+    await db.commit()
 ```
-**Impact:** Concurrent job card creation now safe
+**Impact:** Job numbers guaranteed unique (derived from auto-increment primary key)
 
 ### ✅ #7 - Synchronous embedding blocks event loop
 **Issue:** `client.models.embed_content()` is synchronous, blocking async event loop
@@ -122,9 +125,16 @@ uvicorn app.main:app --host 0.0.0.0 --port 8080
 
 # Test endpoints
 curl http://localhost:8080/
+
+# Get JWT token (real auth - Phase 2 fix)
+TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=admin&password=admin" | jq -r '.access_token')
+
+# Use JWT token for authenticated requests
 curl -X POST http://localhost:8080/api/v1/chat/query \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer fake-super-secret-token" \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{"query":"Brake grinding noise","vehicle":{"make":"Maruti","model":"Swift","year":2019,"fuel":"petrol"},"tenant_id":"tenant_123"}'
 ```
 

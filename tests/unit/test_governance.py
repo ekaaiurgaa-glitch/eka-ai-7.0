@@ -31,11 +31,11 @@ def test_context_gate_allows_general_query_without_vehicle():
 
 
 def test_confidence_gate_passes_high_confidence():
-    confidence_gate(85.0)
-    confidence_gate(70.0)
+    confidence_gate(95.0)
+    confidence_gate(92.0)
 
 
 def test_confidence_gate_fails_low_confidence():
     with pytest.raises(HTTPException) as exc:
         confidence_gate(45.0)
-    assert "LOW_CONFIDENCE" in exc.value.detail
+    assert "REQUEST_CLARIFICATION" in exc.value.detail
