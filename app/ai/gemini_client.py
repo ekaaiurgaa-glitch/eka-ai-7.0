@@ -2,7 +2,13 @@ from google import genai
 from google.genai import types
 from app.core.config import settings
 
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
+_client = None
+
+def get_client():
+    global _client
+    if _client is None:
+        _client = genai.Client(api_key=settings.GEMINI_API_KEY)
+    return _client
 
 
 async def call_gemini(prompt: str, system_prompt: str = None) -> str:
@@ -11,6 +17,7 @@ async def call_gemini(prompt: str, system_prompt: str = None) -> str:
     Uses the new google-genai SDK (google.genai).
     """
     try:
+        client = get_client()
         config = types.GenerateContentConfig(
             system_instruction=system_prompt,
         ) if system_prompt else None
@@ -32,6 +39,7 @@ async def call_gemini_with_tools(prompt: str, tools: list, system_prompt: str = 
     Uses the new google-genai SDK (google.genai).
     """
     try:
+        client = get_client()
         config = types.GenerateContentConfig(
             tools=tools,
             system_instruction=system_prompt,

@@ -20,9 +20,11 @@ def test_mg_calculation_tata_nexon():
 
     response = calculate_mg(request)
 
-    assert response.annual_parts == 48000
+    # With usage multiplier: 48000 * (2500/1000) = 120000
+    assert response.annual_parts == 120000.0
     assert response.annual_labor == 24000
     assert response.city_adj == 1.15
     assert response.risk_adj == 1.10
-    assert response.final_annual_cost == 83160.00
-    assert response.monthly_mg == 6930.00
+    # (120000 + 24000*1.15) * 1.10 = 162360
+    assert response.final_annual_cost == 162360.00
+    assert response.monthly_mg == 13530.00
