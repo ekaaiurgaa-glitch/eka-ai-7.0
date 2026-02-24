@@ -13,7 +13,7 @@ except ImportError:
 
 async def get_embedding(text_input: str) -> List[float]:
     """
-    Get embedding vector for text using Gemini text-embedding-004.
+    Get embedding vector for text using Gemini embedding model.
     Falls back to a zero vector if the API is unavailable.
     """
     try:
@@ -23,7 +23,7 @@ async def get_embedding(text_input: str) -> List[float]:
         client = genai.Client(api_key=settings.GEMINI_API_KEY)
         result = await asyncio.to_thread(
             client.models.embed_content,
-            model="text-embedding-004",
+            model="gemini-embedding-001",
             contents=text_input,
         )
         return result.embeddings[0].values
