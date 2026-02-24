@@ -15,7 +15,7 @@ All critical infrastructure upgrades completed in **4 hours**.
 **Changes**:
 - `.env.example`: PostgreSQL default connection string
 - `docker-compose.yml`: PostgreSQL 16 + pgvector + Redis
-- `init_db.py`: Auto-creates `vector` extension
+- `alembic upgrade head`: Initializes database with pgvector extension
 - `requirements.txt`: Added `pgvector`
 
 **Impact**: Production-grade persistence, scales to millions of records
@@ -66,7 +66,7 @@ cp .env.example .env
 ### 3. Initialize Database
 ```bash
 pip install -r requirements.txt
-python init_db.py
+alembic upgrade head
 ```
 
 ### 4. Start Server
@@ -164,7 +164,7 @@ Usage-based MG (accurate fleet pricing)
 4. `app/modules/knowledge/model.py` — `Vector(768)` with fallback
 5. `app/modules/knowledge/service.py` — Native pgvector search
 6. `app/modules/mg_engine/deterministic_engine.py` — Usage multiplier
-7. `init_db.py` — Auto-create vector extension
+7. Database Migration — Auto-create vector extension
 
 ---
 
@@ -267,7 +267,7 @@ docker-compose up -d postgres
 
 ### 3. Initialize Schema
 ```bash
-python init_db.py
+alembic upgrade head
 ```
 
 ### 4. Import Data (manual, schema differs)

@@ -12,7 +12,7 @@ async def test_chat_domain_gate_reject(client: AsyncClient, auth_headers: dict):
         },
         headers=auth_headers,
     )
-    assert response.status_code == 400
+    assert response.status_code == 403
     assert "not related to automobiles" in response.json()["detail"]
 
 

@@ -71,6 +71,8 @@ class DomainClassifier:
         self.model.fit(X, y)
         
         # Save model
+        import os
+        os.makedirs("models", exist_ok=True)
         with open("models/domain_classifier.pkl", "wb") as f:
             pickle.dump(self.model, f)
         print(f"Model trained with {len(X)} samples, accuracy: {self.model.score(X, y):.2%}")

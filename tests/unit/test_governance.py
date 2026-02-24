@@ -3,15 +3,17 @@ from app.ai.governance import domain_gate, context_gate, confidence_gate
 from fastapi import HTTPException
 
 
-def test_domain_gate_allows_automobile_queries():
-    domain_gate("My car engine is overheating")
-    domain_gate("Brake pads need replacement")
-    domain_gate("Check engine light is on")
+@pytest.mark.asyncio
+async def test_domain_gate_allows_automobile_queries():
+    await domain_gate("My car engine is overheating")
+    await domain_gate("Brake pads need replacement")
+    await domain_gate("Check engine light is on")
 
 
-def test_domain_gate_rejects_non_automobile():
+@pytest.mark.asyncio
+async def test_domain_gate_rejects_non_automobile():
     with pytest.raises(HTTPException) as exc:
-        domain_gate("What is the weather today?")
+        await domain_gate("What is the weather today?")
     assert "not related to automobiles" in exc.value.detail
 
 
