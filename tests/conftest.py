@@ -84,12 +84,11 @@ async def test_job_card(async_client: AsyncClient, auth_token: str) -> dict:
     vehicle_response = await async_client.post(
         "/api/v1/vehicles",
         json={
-            "vin": "TEST123456",
+            "plate_number": "TEST123",
             "make": "Honda",
             "model": "City",
             "year": 2020,
-            "owner_name": "Test Owner",
-            "owner_phone": "1234567890",
+            "fuel_type": "petrol",
         },
         headers={"Authorization": f"Bearer {auth_token}"},
     )

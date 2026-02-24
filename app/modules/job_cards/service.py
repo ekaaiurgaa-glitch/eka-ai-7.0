@@ -228,15 +228,16 @@ async def summarize_job_card(
     }
     
     # Upsert: delete old if exists, insert new
-    await db.execute(
+    result = await db.execute(
         select(model.JobSummary).filter(
             model.JobSummary.job_id == job_card_id,
             model.JobSummary.tenant_id == tenant_id,
         )
     )
-    old_summary = result.scalar_one_or_none() if 'result' in locals() else None
+    old_summary = result.scalar_one_or_none()
     if old_summary:
         await db.delete(old_summary)
+        await db.flush()  # Flush delete before insert
     
     new_summary = model.JobSummary(**summary_data)
     db.add(new_summary)
