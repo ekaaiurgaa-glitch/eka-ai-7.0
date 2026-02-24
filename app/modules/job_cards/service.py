@@ -132,3 +132,125 @@ async def create_estimate(db: AsyncSession, job_card_id: int, estimate: schema.E
                      {"total_parts": total_parts, "total_labor": total_labor}, tenant_id)
     await db.commit()
     return db_estimate
+
+
+async def summarize_job_card(
+    db: AsyncSession,
+    job_card_id: int,
+    tenant_id: str,
+    force_refresh: bool = False,
+) -> schema.SummarizeResponse:
+    """
+    Generate or retrieve cached AI summary of job card.
+    
+    Args:
+        db: Database session
+        job_card_id: ID of job card to summarize
+        tenant_id: Tenant isolation
+        force_refresh: Bypass cache and regenerate
+        
+    Returns:
+        SummarizeResponse with AI-generated summary
+    """
+    from app.ai.summarization import summarize_job_card as ai_summarize
+    from app.modules.vehicles.service import get_vehicle
+    
+    # Get job card
+    job_card = await get_job_card(db, job_card_id, tenant_id)
+    
+    # Check for cached summary (unless force_refresh)
+    if not force_refresh:
+        result = await db.execute(
+            select(model.JobSummary).filter(
+                model.JobSummary.job_id == job_card_id,
+                model.JobSummary.tenant_id == tenant_id,
+            )
+        )
+        cached = result.scalar_one_or_none()
+        
+        # Cache valid if exists and job state hasn't changed
+        if cached and cached.job_state_at_summary == job_card.state:
+            return schema.SummarizeResponse(
+                job_id=job_card_id,
+                job_no=job_card.job_no,
+                technical_summary=cached.technical_summary,
+                customer_summary=cached.customer_summary,
+                urgency=cached.urgency,
+                estimated_cost=cached.estimated_cost,
+                recommended_action=cached.recommended_action,
+                cached=True,
+                generated_at=cached.generated_at,
+            )
+    
+    # Get vehicle info
+    try:
+        vehicle = await get_vehicle(db, job_card.vehicle_id, tenant_id)
+        vehicle_info = {
+            "make": vehicle.make,
+            "model": vehicle.model,
+            "year": vehicle.year,
+        }
+    except Exception:
+        vehicle_info = {"make": "Unknown", "model": "Unknown", "year": "N/A"}
+    
+    # Get estimate info
+    result = await db.execute(
+        select(model.Estimate).filter(
+            model.Estimate.job_id == job_card_id,
+            model.Estimate.tenant_id == tenant_id,
+        )
+    )
+    estimate = result.scalar_one_or_none()
+    
+    estimate_parts = estimate.lines if estimate else []
+    estimate_total = estimate.total_parts + estimate.total_labor if estimate else 0.0
+    
+    # Call AI summarization
+    ai_result = await ai_summarize(
+        job_no=job_card.job_no,
+        mechanic_notes=job_card.complaint,
+        vehicle_info=vehicle_info,
+        estimate_parts=estimate_parts,
+        estimate_total=estimate_total,
+    )
+    
+    # Cache the result
+    summary_data = {
+        "job_id": job_card_id,
+        "tenant_id": tenant_id,
+        "job_state_at_summary": job_card.state,
+        "technical_summary": ai_result["technical_summary"],
+        "customer_summary": ai_result["customer_summary"],
+        "urgency": ai_result["urgency"],
+        "estimated_cost": ai_result["estimated_cost"],
+        "recommended_action": ai_result["recommended_action"],
+        "generated_at": datetime.now(timezone.utc),
+    }
+    
+    # Upsert: delete old if exists, insert new
+    result = await db.execute(
+        select(model.JobSummary).filter(
+            model.JobSummary.job_id == job_card_id,
+            model.JobSummary.tenant_id == tenant_id,
+        )
+    )
+    old_summary = result.scalar_one_or_none()
+    if old_summary:
+        await db.delete(old_summary)
+        await db.flush()  # Flush delete before insert
+    
+    new_summary = model.JobSummary(**summary_data)
+    db.add(new_summary)
+    await db.commit()
+    
+    return schema.SummarizeResponse(
+        job_id=job_card_id,
+        job_no=job_card.job_no,
+        technical_summary=ai_result["technical_summary"],
+        customer_summary=ai_result["customer_summary"],
+        urgency=ai_result["urgency"],
+        estimated_cost=ai_result["estimated_cost"],
+        recommended_action=ai_result["recommended_action"],
+        cached=False,
+        generated_at=summary_data["generated_at"],
+    )
