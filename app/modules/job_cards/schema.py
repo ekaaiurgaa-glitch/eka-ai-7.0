@@ -20,13 +20,13 @@ class JobCard(JobCardBase):
     model_config = {"from_attributes": True}
 
 class EstimateLine(BaseModel):
-    part_id: int
+    part_id: Optional[int] = None
+    description: Optional[str] = None
     quantity: int
     price: float
-    tax_rate: float
+    tax_rate: float = 0.18  # Default GST
 
 class EstimateBase(BaseModel):
-    job_id: int
     lines: list[EstimateLine]
 
 class EstimateCreate(EstimateBase):
