@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin")
 
     # CORS
-    ALLOWED_ORIGINS: List[str] = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080").split(",")
+    ALLOWED_ORIGINS: List[str] = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080,*").split(",")
 
     # Redis (optional — graceful fallback if not set)
     REDIS_URL: Optional[str] = os.getenv("REDIS_URL")
