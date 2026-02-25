@@ -111,8 +111,12 @@ class DomainClassifier:
             # Check if embedding is valid (not all zeros from fallback)
             if all(v == 0.0 for v in embedding):
                 return self._keyword_fallback(query)
-            prediction = self.model.predict([embedding])[0]
-            return prediction == 1
+            # Use predict_proba for threshold enforcement (TDD Section 2.4)
+            probabilities = self.model.predict_proba([embedding])[0]
+            automobile_prob = probabilities[1]  # Index 1 is the 'automobile' label
+            
+            logger.info(f"Domain classification probability: {automobile_prob:.4f}")
+            return automobile_prob >= 0.85
         except Exception:
             # If embeddings fail (no API key), use keyword fallback
             return self._keyword_fallback(query)

@@ -69,7 +69,7 @@ class LLMClient:
         # Since this is a skeleton without actual secrets, returning mock
         from app.ai.intelligence_service import _mock_intelligence_response
         query = messages[-1]["content"] if messages else ""
-        content = _mock_intelligence_response(query)
+        content = await _mock_intelligence_response(query)
         if isinstance(content, dict):
             import json
             content = json.dumps(content)

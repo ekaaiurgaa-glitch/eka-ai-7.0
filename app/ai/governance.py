@@ -29,18 +29,18 @@ def vehicle_context_complete(vehicle_context: dict) -> bool:
     """
     Checks if the vehicle context is complete enough for a diagnosis.
     """
-    required_fields = ["make", "model", "year"]
-    return all(field in vehicle_context for field in required_fields)
+    required_fields = ["make", "model", "year", "fuel_type"]
+    return all(field in vehicle_context and vehicle_context[field] for field in required_fields)
 
 def context_gate(query: str, vehicle_context: dict = None):
     """
     If the query seems to need diagnostic information, it checks if the vehicle context is present.
     """
-    diagnostic_keywords = ["problem", "issue", "sound", "noise", "grinding", "stopping"]
+    diagnostic_keywords = ["problem", "issue", "sound", "noise", "grinding", "stopping", "mg", "quote"]
     needs_diagnostic = any(keyword in query.lower() for keyword in diagnostic_keywords)
 
     if needs_diagnostic and (not vehicle_context or not vehicle_context_complete(vehicle_context)):
-        raise HTTPException(status_code=422, detail="CONTEXT_REQUEST: Please provide vehicle make, model, and year for a better diagnosis.")
+        raise HTTPException(status_code=422, detail="CONTEXT_REQUEST: Please provide vehicle make, model, year, and fuel_type for a better diagnosis/quote.")
 
 # Placeholder for Confidence Gate
 def confidence_gate(confidence: float):
