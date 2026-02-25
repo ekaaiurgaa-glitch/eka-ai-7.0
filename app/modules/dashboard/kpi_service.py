@@ -5,7 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from datetime import datetime, timedelta
 from app.core.cache import cache_get, cache_set
-from app.db.models import JobCard, Invoice, Vehicle, Estimate
+from app.modules.job_cards.model import JobCard
+from app.modules.invoices.model import Invoice
+from app.modules.vehicles.model import Vehicle
+from app.modules.job_cards.model import Estimate
 
 @dataclass
 class WorkshopKPIs:
