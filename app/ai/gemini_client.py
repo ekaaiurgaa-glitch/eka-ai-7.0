@@ -20,10 +20,15 @@ async def call_gemini(prompt: str, system_prompt: str = None) -> str:
         client = get_client()
         config = types.GenerateContentConfig(
             system_instruction=system_prompt,
-        ) if system_prompt else None
+            temperature=0.4,
+            top_p=0.9,
+        ) if system_prompt else types.GenerateContentConfig(
+            temperature=0.4,
+            top_p=0.9,
+        )
 
         response = await client.aio.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-3-flash-preview",
             contents=prompt,
             config=config,
         )
@@ -43,9 +48,11 @@ async def call_gemini_with_tools(prompt: str, tools: list, system_prompt: str = 
         config = types.GenerateContentConfig(
             tools=tools,
             system_instruction=system_prompt,
+            temperature=0.4,
+            top_p=0.9,
         )
         response = await client.aio.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-3-flash-preview",
             contents=prompt,
             config=config,
         )
