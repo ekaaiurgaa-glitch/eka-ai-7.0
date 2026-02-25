@@ -1,10 +1,15 @@
 import pytest
 import pytest_asyncio
 import uuid
+from unittest.mock import patch
+import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from httpx import AsyncClient, ASGITransport
 from app.db.base import Base
+
+# Disable tracing for tests
+os.environ["JAEGER_ENDPOINT"] = ""
 import app.db.models
 import app.subscriptions.models
 import app.modules.job_cards.model
@@ -34,8 +39,10 @@ async def db_session():
     old_session_local = db_session_module.AsyncSessionLocal
     db_session_module.AsyncSessionLocal = TestingSessionLocal
     
-    async with TestingSessionLocal() as session:
-        yield session
+    with patch("app.modules.chat.service.LLMClient.complete") as mock_gen:
+        mock_gen.return_value = type('obj', (object,), {'content': 'Mocked AI response', 'model_used': 'gemini-3-flash-preview'})()
+        async with TestingSessionLocal() as session:
+            yield session
         
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -45,7 +52,7 @@ async def db_session():
 
 @pytest.fixture
 def test_tenant():
-    return str(uuid.uuid4())
+    return "test_tenant"
 
 @pytest.fixture
 def test_tenant_2():
@@ -58,7 +65,7 @@ def auth_headers(test_tenant):
             "sub": "owner",
             "tenant_id": test_tenant,
             "role": "owner",
-            "permissions": ["chat_access", "can_manage_vehicles", "can_manage_jobs", "can_manage_estimates", "can_create_invoice"]
+            "permissions": ["chat_access", "can_manage_vehicles", "can_manage_jobs", "can_manage_estimates", "can_create_invoice", "can_execute_operator"]
         }
     )
     return {"Authorization": f"Bearer {token}"}
