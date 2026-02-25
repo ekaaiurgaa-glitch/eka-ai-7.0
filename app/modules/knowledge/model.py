@@ -10,6 +10,7 @@ except ImportError:
 
 
 class KnowledgeChunk(Base, TenantMixin, TimestampMixin):
+    __tablename__ = "knowledge_chunks"
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     content = Column(Text, nullable=False)

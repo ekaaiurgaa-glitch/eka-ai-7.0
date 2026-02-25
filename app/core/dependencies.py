@@ -1,5 +1,5 @@
 from typing import AsyncGenerator, Optional
-from fastapi import Depends, Request
+from fastapi import Depends, Request, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import AsyncSessionLocal
 
@@ -22,3 +22,17 @@ async def get_redis():
     """Optional Redis client dependency. Returns None if Redis not configured."""
     from app.core.cache import get_redis_client
     return get_redis_client()
+
+
+class PermissionChecker:
+    def __init__(self, required_permission: str):
+        self.required_permission = required_permission
+
+    def __call__(self, request: Request):
+        permissions = getattr(request.state, "user_permissions", [])
+        if self.required_permission not in permissions:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Missing required permission: {self.required_permission}"
+            )
+        return True

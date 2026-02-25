@@ -7,10 +7,13 @@ from . import schema, model
 from app.modules.job_cards.service import create_job_card as create_job_card_service
 from app.modules.job_cards.schema import JobCardCreate
 from app.ai.intelligence_service import parse_operator_intent
-from app.subscriptions.service import record_usage
+from app.subscriptions.service import record_usage, check_subscription_limits
 
 
 async def generate_preview(db: AsyncSession, request: schema.OperatorExecuteRequest) -> schema.OperatorPreviewResponse:
+    # Check limits
+    await check_subscription_limits(db, request.tenant_id, "operator_actions")
+    
     # NLP Detection (P1-10)
     tokens = 0
     if request.raw_query and not request.intent:

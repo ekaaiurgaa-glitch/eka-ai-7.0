@@ -64,6 +64,7 @@ class LLMClient:
         raise LLMUnavailableException("All LLM providers in fallback chain failed.")
 
     async def _call_google(self, model: str, messages: List[Dict[str, str]], tools: Any, temperature: float, top_p: float, thinking_level: str) -> LLMResponse:
+        from app.ai.intelligence_service import _mock_intelligence_response
         # BRD mandated config
         config = {
             "temperature": temperature,
@@ -73,6 +74,7 @@ class LLMClient:
         if thinking_level == "HIGH":
             config["thinking_config"] = {"thinking_budget": 8192}
             
+        query = messages[-1]["content"] if messages else ""
         content = await _mock_intelligence_response(query)
         if isinstance(content, dict):
             import json

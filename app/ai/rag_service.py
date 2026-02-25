@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from app.modules.knowledge.service import similarity_search
+from app.db.session import AsyncSessionLocal
 
 @dataclass
 class KnowledgeChunk:
@@ -9,30 +11,35 @@ class KnowledgeChunk:
 
 async def retrieve_context(query: str, vehicle_context: Dict[str, Any], top_k: int = 5) -> List[KnowledgeChunk]:
     """
-    1. Embed query using text-embedding-004 (Google)
+    1. Embed query using text-embedding-001 (via similarity_search)
     2. Add vehicle context to query: f"{vehicle_context['make']} {vehicle_context['model']} {query}"
-    3. pgvector similarity search
-    4. Filter by relevance score > 0.75
-    5. Return KnowledgeChunk list
+    3. pgvector similarity search (or fallback)
+    4. Return KnowledgeChunk list
     """
     import logging
     logger = logging.getLogger(__name__)
     
-    context_query = f"{vehicle_context.get('make', '')} {vehicle_context.get('model', '')} {query}".strip()
+    make = vehicle_context.get('make', '')
+    model_name = vehicle_context.get('model', '')
+    
+    # Enrich query with vehicle context for better RAG hits
+    context_query = f"{make} {model_name} {query}".strip()
     logger.info(f"Retrieving context for: {context_query}")
     
-    # Mock behavior to simulate pgvector lookup since we don't have the actual db connection here
-    chunks = [
-        KnowledgeChunk(
-            content="Brake noise diagnosis for Maruti Swift: check pads and rotors.",
-            source="maruti_manuals",
-            relevance_score=0.95
-        ),
-        KnowledgeChunk(
-            content="Swift standard brake pad replacement procedure is ~2 hours labor.",
-            source="labor_manuals",
-            relevance_score=0.88
-        )
-    ]
-    
-    return [c for c in chunks if c.relevance_score > 0.75][:top_k]
+    tenant_id = vehicle_context.get('tenant_id', 'tenant_admin')
+
+    try:
+        async with AsyncSessionLocal() as db:
+            db_chunks = await similarity_search(db, context_query, tenant_id, top_k=top_k)
+            
+            # Convert DB model to KnowledgeChunk dataclass
+            return [
+                KnowledgeChunk(
+                    content=c.content,
+                    source=c.source_url or "internal_kb",
+                    relevance_score=1.0 # similarity_search currently doesn't return scores easily in the common interface
+                ) for c in db_chunks
+            ]
+    except Exception as e:
+        logger.error(f"RAG retrieval failed: {e}")
+        return []

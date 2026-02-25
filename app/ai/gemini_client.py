@@ -23,7 +23,7 @@ async def call_gemini(prompt: str, system_prompt: str = None) -> str:
         ) if system_prompt else None
 
         response = await client.aio.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.0-flash",
             contents=prompt,
             config=config,
         )
@@ -45,7 +45,7 @@ async def call_gemini_with_tools(prompt: str, tools: list, system_prompt: str = 
             system_instruction=system_prompt,
         )
         response = await client.aio.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.0-flash",
             contents=prompt,
             config=config,
         )

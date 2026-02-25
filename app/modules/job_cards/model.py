@@ -4,9 +4,10 @@ from app.db.base import Base, TenantMixin, TimestampMixin
 
 
 class JobCard(Base, TenantMixin, TimestampMixin):
+    __tablename__ = "job_cards"
     id = Column(Integer, primary_key=True, index=True)
     job_no = Column(String, unique=True, index=True)
-    vehicle_id = Column(Integer, ForeignKey("vehicle.id"), index=True)
+    vehicle_id = Column(Integer, ForeignKey("vehicles.id"), index=True)
     complaint = Column(String)
     state = Column(String, default="OPEN")
     created_by = Column(String)  # User ID
@@ -16,8 +17,9 @@ class JobCard(Base, TenantMixin, TimestampMixin):
 
 
 class Estimate(Base, TenantMixin, TimestampMixin):
+    __tablename__ = "estimates"
     id = Column(Integer, primary_key=True, index=True)
-    job_id = Column(Integer, ForeignKey("jobcard.id"))
+    job_id = Column(Integer, ForeignKey("job_cards.id"))
     lines = Column(JSON)
     total_parts = Column(Float)
     total_labor = Column(Float)
@@ -30,8 +32,9 @@ class Estimate(Base, TenantMixin, TimestampMixin):
 
 class JobSummary(Base, TenantMixin, TimestampMixin):
     """Cache for AI-generated job card summaries."""
+    __tablename__ = "job_summaries"
     id = Column(Integer, primary_key=True, index=True)
-    job_id = Column(Integer, ForeignKey("jobcard.id"), unique=True, index=True)
+    job_id = Column(Integer, ForeignKey("job_cards.id"), unique=True, index=True)
     job_state_at_summary = Column(String)  # Invalidate cache when job state changes
     
     # Summary fields

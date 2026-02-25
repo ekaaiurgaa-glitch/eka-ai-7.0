@@ -2,7 +2,9 @@ import re
 import hashlib
 from sqlalchemy.ext.asyncio import AsyncSession
 from . import schema, model
-from app.ai import governance, gemini_client, system_prompt
+from app.ai import governance, system_prompt
+from app.ai.llm_client import LLMClient
+from app.subscriptions.service import record_usage, check_subscription_limits
 
 
 async def process_chat_query(db: AsyncSession, request: schema.ChatQueryRequest, user_id: str) -> schema.ChatQueryResponse:
@@ -12,8 +14,16 @@ async def process_chat_query(db: AsyncSession, request: schema.ChatQueryRequest,
     2. RAG retrieval — inject knowledge context into prompt
     3. Gemini LLM call
     4. Response parsing + confidence gate
-    5. Log request to DB
+    5. Safety & Hallucination gate
+    6. Log request to DB
+    7. Record usage metering
     """
+    await check_subscription_limits(db, request.tenant_id, "tokens")
+    
+    # Gate 1: Privacy Compliance (PII Scrubbing)
+    request.query = governance.scrub_pii(request.query)
+
+    # Gate 2: Domain lock
     await governance.domain_gate(request.query)
     governance.context_gate(request.query, request.vehicle.model_dump() if request.vehicle else None)
 
@@ -34,8 +44,15 @@ async def process_chat_query(db: AsyncSession, request: schema.ChatQueryRequest,
     prompt = f"""User query: {request.query}
 Vehicle context: {request.vehicle.model_dump() if request.vehicle else 'Not provided'}{rag_context}"""
 
-    sys_prompt = system_prompt.get_system_prompt()
-    raw_response = await gemini_client.call_gemini(prompt, sys_prompt)
+    # sys_prompt = system_prompt.get_system_prompt() # We'll put it in messages
+    messages = [
+        {"role": "system", "content": system_prompt.get_system_prompt()},
+        {"role": "user", "content": prompt}
+    ]
+    
+    client = LLMClient()
+    res = await client.complete(messages)
+    raw_response = res.content
 
     if raw_response.startswith("Error:"):
         return schema.ChatQueryResponse(
@@ -52,9 +69,17 @@ Vehicle context: {request.vehicle.model_dump() if request.vehicle else 'Not prov
 
     if parsed_response.confidence_level > 0:
         governance.confidence_gate(parsed_response.confidence_level)
+    
+    # Gate 4: Safety & Hallucination
+    await governance.safety_gate(parsed_response.issue_summary + " " + parsed_response.safety_advisory)
 
     # Log the request
-    log_chat_request(db, request, parsed_response, user_id)
+    await log_chat_request(db, request, parsed_response, user_id)
+
+    # Record usage metering (P1-11)
+    tokens = 150 + (300 if rag_references else 0)
+    await record_usage(db, request.tenant_id, tokens=tokens)
+    parsed_response.tokens_used = tokens
 
     return parsed_response
 
@@ -92,7 +117,7 @@ def parse_structured_response(raw_response: str) -> schema.ChatQueryResponse:
         )
 
 
-def log_chat_request(db: AsyncSession, request: schema.ChatQueryRequest, response: schema.ChatQueryResponse, user_id: str):
+async def log_chat_request(db: AsyncSession, request: schema.ChatQueryRequest, response: schema.ChatQueryResponse, user_id: str):
     """Non-blocking fire-and-forget log — runs in background without awaiting."""
     try:
         query_hash = hashlib.md5(request.query.encode()).hexdigest()
@@ -106,5 +131,6 @@ def log_chat_request(db: AsyncSession, request: schema.ChatQueryRequest, respons
             query_text=request.query,
         )
         db.add(db_chat_request)
+        await db.commit()
     except Exception:
         pass  # Chat logging is non-critical

@@ -16,8 +16,12 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
+    # Only run on PostgreSQL
+    connection = op.get_bind()
+    if connection.dialect.name != 'postgresql':
+        return
+
     # Enforce immutability on audit_logs using PostgreSQL rules
-    # This matches the TDD Section 3.4
     op.execute("""
         CREATE OR REPLACE RULE no_update_audit_logs AS
         ON UPDATE TO audit_logs DO INSTEAD NOTHING;
@@ -28,5 +32,9 @@ def upgrade():
     """)
 
 def downgrade():
+    connection = op.get_bind()
+    if connection.dialect.name != 'postgresql':
+        return
+
     op.execute("DROP RULE IF EXISTS no_update_audit_logs ON audit_logs;")
     op.execute("DROP RULE IF EXISTS no_delete_audit_logs ON audit_logs;")

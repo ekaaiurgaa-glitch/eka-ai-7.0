@@ -8,7 +8,7 @@ from sqlalchemy import text
 from app.core.config import settings
 from app.core.monitoring import MonitoringMiddleware, metrics_endpoint, setup_sentry
 from app.core.logging_config import setup_logging
-from app.core.middleware import TenantMiddleware, CorrelationIdMiddleware
+from app.core.middleware import TenantMiddleware, CorrelationIdMiddleware, AuditMiddleware
 from app.core.tracing import setup_tracing
 from app.core.security import create_access_token
 from app.core.dependencies import get_db
@@ -24,10 +24,10 @@ from app.modules.knowledge.router import router as knowledge_router
 from app.approvals.router import router as approvals_router
 from app.subscriptions.router import router as subscriptions_router
 from app.data_privacy.router import router as privacy_router
+from app.modules.auth.router import router as auth_router
 
 setup_logging(log_level=settings.LOG_LEVEL, json_logs=settings.JSON_LOGS)
 setup_sentry(settings.SENTRY_DSN)
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,6 +47,13 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     lifespan=lifespan,
 )
+
+# Public status
+@app.get("/health", tags=["Health"])
+async def health_check_simple():
+    return {"status": "healthy", "version": "1.0.0"}
+
+app.include_router(auth_router, prefix=settings.API_V1_STR)
 
 setup_tracing(app)
 
@@ -77,6 +84,7 @@ app.add_middleware(
 app.add_middleware(MonitoringMiddleware)
 app.add_middleware(TenantMiddleware)
 app.add_middleware(CorrelationIdMiddleware)
+app.add_middleware(AuditMiddleware)
 
 
 @app.get("/", tags=["Root"])

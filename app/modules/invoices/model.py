@@ -3,8 +3,9 @@ from sqlalchemy.orm import relationship
 from app.db.base import Base, TenantMixin, TimestampMixin
 
 class Invoice(Base, TenantMixin, TimestampMixin):
+    __tablename__ = "invoices"
     id = Column(Integer, primary_key=True, index=True)
-    job_id = Column(Integer, ForeignKey("jobcard.id"))
+    job_id = Column(Integer, ForeignKey("job_cards.id"))
     lines = Column(JSON)
     total_amount = Column(Float)
     tax_amount = Column(Float)

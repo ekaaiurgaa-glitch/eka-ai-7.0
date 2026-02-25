@@ -11,6 +11,7 @@ class GSTCategory(str, enum.Enum):
 
 
 class Part(Base, TenantMixin, TimestampMixin):
+    __tablename__ = "parts"
     id = Column(Integer, primary_key=True, index=True)
     part_number = Column(String, index=True, nullable=False)
     description = Column(String, nullable=False)
@@ -20,6 +21,7 @@ class Part(Base, TenantMixin, TimestampMixin):
 
 
 class LaborRate(Base, TenantMixin, TimestampMixin):
+    __tablename__ = "labor_rates"
     id = Column(Integer, primary_key=True, index=True)
     service_type = Column(String, nullable=False)      # e.g. "brake_service", "engine_overhaul"
     city = Column(String, default="default")           # city-specific rates

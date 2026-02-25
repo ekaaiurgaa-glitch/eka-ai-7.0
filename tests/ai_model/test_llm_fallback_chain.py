@@ -99,7 +99,7 @@ async def test_model_used_field_reflects_actual_model():
     client = LLMClient()
     # Google succeeds (first model in chain)
     result = await client.complete([{"role": "user", "content": "test"}])
-    assert result.model_used == 'gemini-2.0-flash'
+    assert result.model_used == 'gemini-3-flash-preview'
 
 
 @pytest.mark.asyncio
