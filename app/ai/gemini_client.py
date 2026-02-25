@@ -14,21 +14,45 @@ def get_client():
 async def call_gemini(prompt: str, system_prompt: str = None) -> str:
     """
     Calls the Gemini API with the given prompt and optional system prompt.
-    Uses the new google-genai SDK (google.genai).
+    TDD Compliant: gemini-2.0-flash, temperature=0.4, top_p=0.9, max_output_tokens=1024
     """
     try:
         client = get_client()
+        
+        safety_settings = [
+            types.SafetySetting(
+                category="HARM_CATEGORY_HARASSMENT",
+                threshold="BLOCK_ONLY_HIGH"
+            ),
+            types.SafetySetting(
+                category="HARM_CATEGORY_HATE_SPEECH",
+                threshold="BLOCK_ONLY_HIGH"
+            ),
+            types.SafetySetting(
+                category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                threshold="BLOCK_ONLY_HIGH"
+            ),
+            types.SafetySetting(
+                category="HARM_CATEGORY_DANGEROUS_CONTENT",
+                threshold="BLOCK_ONLY_HIGH"
+            )
+        ]
+        
         config = types.GenerateContentConfig(
             system_instruction=system_prompt,
             temperature=0.4,
             top_p=0.9,
+            max_output_tokens=1024,
+            safety_settings=safety_settings
         ) if system_prompt else types.GenerateContentConfig(
             temperature=0.4,
             top_p=0.9,
+            max_output_tokens=1024,
+            safety_settings=safety_settings
         )
 
         response = await client.aio.models.generate_content(
-            model="gemini-3-flash-preview",
+            model="gemini-2.0-flash",
             contents=prompt,
             config=config,
         )
@@ -41,18 +65,41 @@ async def call_gemini(prompt: str, system_prompt: str = None) -> str:
 async def call_gemini_with_tools(prompt: str, tools: list, system_prompt: str = None):
     """
     Calls the Gemini API with tools (for function calling).
-    Uses the new google-genai SDK (google.genai).
+    TDD Compliant: gemini-2.0-flash, temperature=0.4, top_p=0.9, max_output_tokens=1024
     """
     try:
         client = get_client()
+        
+        safety_settings = [
+            types.SafetySetting(
+                category="HARM_CATEGORY_HARASSMENT",
+                threshold="BLOCK_ONLY_HIGH"
+            ),
+            types.SafetySetting(
+                category="HARM_CATEGORY_HATE_SPEECH",
+                threshold="BLOCK_ONLY_HIGH"
+            ),
+            types.SafetySetting(
+                category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                threshold="BLOCK_ONLY_HIGH"
+            ),
+            types.SafetySetting(
+                category="HARM_CATEGORY_DANGEROUS_CONTENT",
+                threshold="BLOCK_ONLY_HIGH"
+            )
+        ]
+        
         config = types.GenerateContentConfig(
             tools=tools,
             system_instruction=system_prompt,
             temperature=0.4,
             top_p=0.9,
+            max_output_tokens=1024,
+            safety_settings=safety_settings
         )
+        
         response = await client.aio.models.generate_content(
-            model="gemini-3-flash-preview",
+            model="gemini-2.0-flash",
             contents=prompt,
             config=config,
         )

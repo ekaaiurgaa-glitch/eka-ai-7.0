@@ -23,7 +23,7 @@ async def get_embedding(text_input: str) -> List[float]:
         client = genai.Client(api_key=settings.GEMINI_API_KEY)
         result = await asyncio.to_thread(
             client.models.embed_content,
-            model="gemini-embedding-001",
+            model="text-embedding-004",
             contents=text_input,
         )
         return result.embeddings[0].values
@@ -77,7 +77,7 @@ async def ingest_document(db: AsyncSession, title: str, content: str, tenant_id:
     return len(chunks)
 
 
-async def similarity_search(db: AsyncSession, query: str, tenant_id: str, top_k: int = 3) -> List[model.KnowledgeChunk]:
+async def similarity_search(db: AsyncSession, query: str, tenant_id: str, top_k: int = 5) -> List[model.KnowledgeChunk]:
     """
     Find top_k most similar knowledge chunks.
     Uses pgvector native operator if available, else in-memory numpy.
