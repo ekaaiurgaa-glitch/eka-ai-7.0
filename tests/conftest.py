@@ -10,6 +10,9 @@ from httpx import AsyncClient, ASGITransport
 # Disable tracing for tests
 os.environ["JAEGER_ENDPOINT"] = ""
 
+# Use HS256 for tests (RS256 requires RSA key)
+os.environ["ALGORITHM"] = "HS256"
+
 # Mock embedding function BEFORE importing app modules that use it
 import app.modules.knowledge.service as knowledge_service
 import asyncio
