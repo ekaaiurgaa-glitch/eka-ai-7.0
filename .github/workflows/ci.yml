@@ -74,4 +74,4 @@ jobs:
     - name: Run bandit
       run: |
         pip install bandit
-        bandit -r app -f json -o bandit-report.json || true
+        bandit -r app -f json -o bandit-report.json

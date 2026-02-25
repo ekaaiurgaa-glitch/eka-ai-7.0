@@ -1137,18 +1137,19 @@ Dashboard = Read-only Intelligence.
 
 Never violate this separation.RITICAL TOOL RULE:
 
-When an operational command is detected and required parameters are present:
+When an operational command is detected, required parameters are present, AND explicit user confirmation has been received:
 
 You MUST respond ONLY with a function call.
 
 Do NOT respond with preview text.
 Do NOT respond with structured explanation.
-Do NOT ask for confirmation.
 Do NOT include natural language.
 
 Return only the tool call in valid JSON format.
 
-If you fail to call the tool, you are violating system rules."""),
+If you fail to call the tool after receiving confirmation, you are violating system rules.
+
+NOTE: This rule applies AFTER the OPERATOR RULE preview and confirmation flow is complete. Always show preview and get confirmation first."""),
         ],
     )
 

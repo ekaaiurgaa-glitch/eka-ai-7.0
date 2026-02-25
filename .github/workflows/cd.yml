@@ -51,26 +51,11 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Run smoke tests
+      env:
+        SMOKE_TEST_URL: ${{ vars.STAGING_URL }}
       run: |
-        pip install requests
-        python -c "
-        import requests
-        import sys
-        
-        BASE_URL = 'https://staging-api.eka-ai.com'
-        
-        # Test root endpoint
-        r = requests.get(f'{BASE_URL}/')
-        assert r.status_code == 200, f'Root failed: {r.status_code}'
-        print('✅ Root endpoint OK')
-        
-        # Test chat examples
-        r = requests.get(f'{BASE_URL}/api/v1/chat/examples')
-        assert r.status_code == 200, f'Chat examples failed: {r.status_code}'
-        print('✅ Chat examples OK')
-        
-        print('All smoke tests passed!')
-        "
+        pip install requests pytest
+        python tests/smoke_test.py
 
   deploy-production:
     needs: smoke-test-staging
