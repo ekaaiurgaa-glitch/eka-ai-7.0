@@ -71,6 +71,16 @@ async def get_job_card(db: AsyncSession, job_card_id: int, tenant_id: str) -> mo
     return job_card
 
 
+async def get_job_card_by_job_no(db: AsyncSession, job_no: str, tenant_id: str) -> model.JobCard:
+    result = await db.execute(
+        select(model.JobCard).filter(model.JobCard.job_no == job_no, model.JobCard.tenant_id == tenant_id)
+    )
+    job_card = result.scalar_one_or_none()
+    if not job_card:
+        raise HTTPException(status_code=404, detail=f"Job card with number {job_no} not found")
+    return job_card
+
+
 async def transition_job_card_state(db: AsyncSession, job_card_id: int, new_state: str, tenant_id: str, user_id: str) -> model.JobCard:
     db_job_card = await get_job_card(db, job_card_id, tenant_id)
 

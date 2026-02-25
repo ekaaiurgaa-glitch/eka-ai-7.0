@@ -4,8 +4,11 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from . import schema, model
-from app.modules.job_cards.service import create_job_card as create_job_card_service
+from app.modules.job_cards.service import create_job_card as create_job_card_service, get_job_card_by_job_no
 from app.modules.job_cards.schema import JobCardCreate
+from app.modules.job_cards.model import Estimate
+from app.modules.invoices.service import create_invoice
+from app.modules.invoices.schema import InvoiceCreate, InvoiceLine
 from app.ai.intelligence_service import parse_operator_intent
 from app.subscriptions.service import record_usage, check_subscription_limits
 
@@ -98,8 +101,36 @@ async def execute_tool(db: AsyncSession, preview_id: str, actor_id: str, tenant_
         job_card = await create_job_card_service(db, job_card_data, tenant_id, actor_id)
         exec_result = {"job_card_id": job_card.id, "job_no": job_card.job_no}
     elif tool_name == "generate_invoice":
-        # In a real app: call invoices.service.generate_invoice
-        exec_result = {"invoice_id": str(uuid.uuid4()), "job_no": args.get("job_no")}
+        job_no = args.get("job_no")
+        job_card = await get_job_card_by_job_no(db, job_no, tenant_id)
+
+        # Find approved estimate
+        estimate_result = await db.execute(
+            select(Estimate).filter(
+                Estimate.job_id == job_card.id,
+                Estimate.approved == True
+            )
+        )
+        approved_estimate = estimate_result.scalar_one_or_none()
+
+        if not approved_estimate:
+            raise HTTPException(status_code=400, detail=f"No approved estimate found for Job No: {job_no}")
+
+        # Create invoice lines from estimate lines
+        invoice_lines = [
+            InvoiceLine(
+                part_id=line.get("part_id"),
+                quantity=line.get("quantity"),
+                price=line.get("price"),
+                tax_rate=line.get("tax_rate", 0.18),
+                hsn_code="998729" # Dummy HSN code
+            )
+            for line in approved_estimate.lines
+        ]
+
+        invoice_data = InvoiceCreate(job_id=job_card.id, lines=invoice_lines)
+        invoice = await create_invoice(db, invoice_data, tenant_id)
+        exec_result = {"invoice_id": invoice.id, "total_amount": invoice.total_amount}
     elif tool_name == "record_payment":
         exec_result = {"payment_id": str(uuid.uuid4()), "status": "recorded"}
     elif tool_name == "trigger_state_transition":

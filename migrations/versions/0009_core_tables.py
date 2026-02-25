@@ -82,7 +82,22 @@ def upgrade():
         sa.Column('updated_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'))
     )
 
+    # audit_logs
+    op.create_table('audit_logs',
+        sa.Column('id', sa.Integer(), primary_key=True, autoincrement=True),
+        sa.Column('entity_type', sa.String(), index=True),
+        sa.Column('entity_id', sa.String(), index=True),
+        sa.Column('actor_id', sa.String()),
+        sa.Column('action', sa.String()),
+        sa.Column('payload', sa.JSON()),
+        sa.Column('old_state', sa.JSON()),
+        sa.Column('new_state', sa.JSON()),
+        sa.Column('tenant_id', sa.String(), nullable=False, index=True),
+        sa.Column('created_at', sa.DateTime(), server_default=sa.text('CURRENT_TIMESTAMP'))
+    )
+
 def downgrade():
+    op.drop_table('audit_logs')
     op.drop_table('labor_rates')
     op.drop_table('parts')
     op.drop_table('estimates')

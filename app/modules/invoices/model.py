@@ -9,6 +9,7 @@ class Invoice(Base, TenantMixin, TimestampMixin):
     lines = Column(JSON)
     total_amount = Column(Float)
     tax_amount = Column(Float)
+    status = Column(String, server_default="UNPAID") # UNPAID, PAID, VOID
 
     # Relationship to JobCard (assuming one-to-one or one-to-many)
     job_card = relationship("JobCard")

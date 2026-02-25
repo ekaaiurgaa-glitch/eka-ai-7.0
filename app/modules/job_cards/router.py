@@ -6,7 +6,7 @@ from . import schema, service, model
 from app.core.dependencies import get_db, get_tenant_id
 from app.core.security import get_current_user, require_permission
 
-router = APIRouter(prefix="/jobs", tags=["Jobs"])
+router = APIRouter(prefix="/job-cards", tags=["Job Cards"])
 
 
 @router.post("", response_model=schema.JobCardResponse)

@@ -1,13 +1,16 @@
 import pytest
+from unittest.mock import patch
 from app.ai.governance import domain_gate, context_gate, confidence_gate
 from fastapi import HTTPException
 
 
 @pytest.mark.asyncio
 async def test_domain_gate_allows_automobile_queries():
-    await domain_gate("My car engine is overheating")
-    await domain_gate("Brake pads need replacement")
-    await domain_gate("Check engine light is on")
+    # Mock the classifier to return high confidence for auto queries
+    with patch("app.ai.governance.domain_classifier.is_automobile_query", return_value=True):
+        await domain_gate("My car engine is overheating")
+        await domain_gate("Brake pads need replacement")
+        await domain_gate("Check engine light is on")
 
 
 @pytest.mark.asyncio

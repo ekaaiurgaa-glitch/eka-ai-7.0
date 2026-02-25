@@ -1,15 +1,23 @@
 import pytest
 import pytest_asyncio
 import uuid
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from httpx import AsyncClient, ASGITransport
-from app.db.base import Base
 
 # Disable tracing for tests
 os.environ["JAEGER_ENDPOINT"] = ""
+
+# Mock embedding function BEFORE importing app modules that use it
+import app.modules.knowledge.service as knowledge_service
+import asyncio
+async def mock_get_embedding(text):
+    return [0.1] * 768
+knowledge_service.get_embedding = mock_get_embedding
+
+from app.db.base import Base
 import app.db.models
 import app.subscriptions.models
 import app.modules.job_cards.model

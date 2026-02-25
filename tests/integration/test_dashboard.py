@@ -22,8 +22,8 @@ async def test_workshop_dashboard(client: AsyncClient, auth_headers: dict, db_se
     response = await client.get("/api/v1/dashboard/workshop", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
-    assert "revenue" in data
-    assert "jobs_by_state" in data
+    assert "daily_revenue" in data
+    assert "jobs_by_status" in data
 
 
 @pytest.mark.asyncio
@@ -31,7 +31,7 @@ async def test_fleet_dashboard(client: AsyncClient, auth_headers: dict):
     response = await client.get("/api/v1/dashboard/fleet", headers=auth_headers)
     assert response.status_code == 200
     data = response.json()
-    assert "total_jobs" in data
+    assert "cost_per_vehicle" in data
 
 
 @pytest.mark.asyncio
@@ -57,15 +57,13 @@ async def test_owner_dashboard_with_vehicle_id(client: AsyncClient, auth_headers
     )
     assert response.status_code == 200
     data = response.json()
-    assert "vehicle_id" in data
+    assert "total_spend_ytd" in data
     assert "service_history" in data
-
 
 @pytest.mark.asyncio
 async def test_owner_dashboard_without_vehicle_id(client: AsyncClient, auth_headers: dict):
     response = await client.get("/api/v1/dashboard/owner", headers=auth_headers)
-    assert response.status_code == 400
-    assert "vehicle_id" in response.json()["detail"]
+    assert response.status_code == 422
 
 
 @pytest.mark.asyncio

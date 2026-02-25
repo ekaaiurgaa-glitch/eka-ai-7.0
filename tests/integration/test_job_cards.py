@@ -3,13 +3,13 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_create_job_card(client: AsyncClient, auth_headers: dict, db_session):
+async def test_create_job_card(client: AsyncClient, auth_headers: dict, db_session, test_tenant):
     # First create a vehicle
     from app.modules.vehicles import service, schema
     vehicle = await service.create_vehicle(
         db_session,
         schema.VehicleCreate(plate_number="TEST123", make="Maruti", model="Swift", year=2019, fuel_type=schema.FuelType.petrol),
-        "test_tenant",
+        test_tenant,
     )
 
     response = await client.post(
@@ -24,7 +24,7 @@ async def test_create_job_card(client: AsyncClient, auth_headers: dict, db_sessi
 
 
 @pytest.mark.asyncio
-async def test_get_job_card(client: AsyncClient, auth_headers: dict, db_session):
+async def test_get_job_card(client: AsyncClient, auth_headers: dict, db_session, test_tenant):
     from app.modules.vehicles import service as v_service, schema as v_schema
     from app.modules.job_cards import service as j_service, schema as j_schema
 
@@ -46,7 +46,7 @@ async def test_get_job_card(client: AsyncClient, auth_headers: dict, db_session)
 
 
 @pytest.mark.asyncio
-async def test_transition_job_card_state(client: AsyncClient, auth_headers: dict, db_session):
+async def test_transition_job_card_state(client: AsyncClient, auth_headers: dict, db_session, test_tenant):
     from app.modules.vehicles import service as v_service, schema as v_schema
     from app.modules.job_cards import service as j_service, schema as j_schema
 
@@ -58,7 +58,7 @@ async def test_transition_job_card_state(client: AsyncClient, auth_headers: dict
     job = await j_service.create_job_card(
         db_session,
         j_schema.JobCardCreate(vehicle_id=vehicle.id, complaint="Battery check"),
-        "test_tenant",
+        test_tenant,
         "test_user",
     )
 
@@ -72,19 +72,19 @@ async def test_transition_job_card_state(client: AsyncClient, auth_headers: dict
 
 
 @pytest.mark.asyncio
-async def test_invalid_state_transition(client: AsyncClient, auth_headers: dict, db_session):
+async def test_invalid_state_transition(client: AsyncClient, auth_headers: dict, db_session, test_tenant):
     from app.modules.vehicles import service as v_service, schema as v_schema
     from app.modules.job_cards import service as j_service, schema as j_schema
 
     vehicle = await v_service.create_vehicle(
         db_session,
         v_schema.VehicleCreate(plate_number="INV123", make="Maruti", model="Alto", year=2018, fuel_type=v_schema.FuelType.petrol),
-        "test_tenant",
+        test_tenant,
     )
     job = await j_service.create_job_card(
         db_session,
         j_schema.JobCardCreate(vehicle_id=vehicle.id, complaint="Test"),
-        "test_tenant",
+        test_tenant,
         "test_user",
     )
 
@@ -98,19 +98,19 @@ async def test_invalid_state_transition(client: AsyncClient, auth_headers: dict,
 
 
 @pytest.mark.asyncio
-async def test_create_estimate(client: AsyncClient, auth_headers: dict, db_session):
+async def test_create_estimate(client: AsyncClient, auth_headers: dict, db_session, test_tenant):
     from app.modules.vehicles import service as v_service, schema as v_schema
     from app.modules.job_cards import service as j_service, schema as j_schema
 
     vehicle = await v_service.create_vehicle(
         db_session,
         v_schema.VehicleCreate(plate_number="EST123", make="Hyundai", model="i20", year=2020, fuel_type=v_schema.FuelType.petrol),
-        "test_tenant",
+        test_tenant,
     )
     job = await j_service.create_job_card(
         db_session,
         j_schema.JobCardCreate(vehicle_id=vehicle.id, complaint="Service"),
-        "test_tenant",
+        test_tenant,
         "test_user",
     )
     await j_service.transition_job_card_state(db_session, job.id, "DIAGNOSIS", "test_tenant", "test_user")
