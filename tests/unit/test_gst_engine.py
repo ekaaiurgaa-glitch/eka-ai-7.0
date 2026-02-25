@@ -35,22 +35,3 @@ def test_zero_gst_on_warranty_item():
     res = calculate_gst(Decimal("1000.00"), Decimal("0"), False)
     assert res["total"] == Decimal("1000.00")
 
-def test_multi_line_item_sum(): pass
-def test_rounding_to_nearest_paisa(): pass
-def test_hsn_87089900_brake_pads(): pass
-def test_hsn_998712_labor_service(): pass
-def test_intrastate_gst_number_validates(): pass
-def test_gst_invoice_number_format(): pass
-def test_reverse_charge_not_applicable_b2c(): pass
-def test_cgst_sgst_each_half_of_rate(): pass
-def test_large_invoice_precision(): pass
-def test_edge_case_1(): pass
-def test_edge_case_2(): pass
-def test_edge_case_3(): pass
-def test_edge_case_4(): pass
-def test_edge_case_5(): pass
-def test_edge_case_6(): pass
-def test_edge_case_7(): pass
-def test_edge_case_8(): pass
-def test_edge_case_9(): pass
-def test_edge_case_10(): pass

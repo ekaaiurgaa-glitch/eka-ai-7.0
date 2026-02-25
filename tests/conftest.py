@@ -1,4 +1,5 @@
 import pytest
+import pytest_asyncio
 import uuid
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
@@ -7,7 +8,7 @@ from app.db.base import Base
 # Assuming an SQLite test db for simplicity
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def db_session():
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
     async with engine.begin() as conn:
@@ -77,6 +78,6 @@ class FakeRedis:
         if key in self.data:
             del self.data[key]
 
-@pytest.fixture
-def redis_client():
+@pytest_asyncio.fixture
+async def redis_client():
     return FakeRedis()

@@ -49,18 +49,20 @@ def test_full_context_passes_context_gate():
 def test_missing_make_triggers_clarification():
     ctx = {"model": "Focus", "year": "2015"}
     with pytest.raises(HTTPException) as exc:
-        context_gate("Engine light is on", ctx)
+        context_gate("There is a grinding noise", ctx)
     assert exc.value.status_code == 422
 
 def test_missing_model_triggers_clarification():
     ctx = {"make": "Ford", "year": "2015"}
-    with pytest.raises(HTTPException):
-        context_gate("Engine light is on", ctx)
+    with pytest.raises(HTTPException) as exc:
+        context_gate("There is a grinding noise", ctx)
+    assert exc.value.status_code == 422
 
 def test_partial_context_triggers_specific_question():
     ctx = {"make": "Honda"}
-    with pytest.raises(HTTPException):
+    with pytest.raises(HTTPException) as exc:
         context_gate("Grinding noise", ctx)
+    assert exc.value.status_code == 422
 
 def test_high_confidence_response_passes():
     confidence_gate(95.0)
@@ -74,5 +76,6 @@ def test_89_pct_confidence_triggers_followup():
     assert exc.value.status_code == 422
 
 def test_low_confidence_does_not_return_diagnosis():
-    with pytest.raises(HTTPException):
+    with pytest.raises(HTTPException) as exc:
         confidence_gate(50.0)
+    assert exc.value.status_code == 422
