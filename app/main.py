@@ -25,6 +25,14 @@ from app.approvals.router import router as approvals_router
 from app.subscriptions.router import router as subscriptions_router
 from app.data_privacy.router import router as privacy_router
 from app.modules.auth.router import router as auth_router
+from app.modules.mg_engine.financial_router import router as mg_financial_router
+from app.modules.analytics.router import router as analytics_router
+from app.core.dr_router import router as dr_router
+from app.core.payment_router import router as payment_router
+from app.core.notification_router import router as notification_router
+from app.modules.insurance.router import router as insurance_router
+from app.modules.mg_engine.termination_router import router as termination_router
+from app.modules.mg_engine.claims_router import router as claims_router
 
 setup_logging(log_level=settings.LOG_LEVEL, json_logs=settings.JSON_LOGS)
 setup_sentry(settings.SENTRY_DSN)
@@ -156,5 +164,13 @@ app.include_router(knowledge_router, prefix=settings.API_V1_STR)
 app.include_router(approvals_router, prefix=settings.API_V1_STR)
 app.include_router(subscriptions_router, prefix=settings.API_V1_STR)
 app.include_router(privacy_router, prefix=settings.API_V1_STR)
+app.include_router(mg_financial_router, prefix=settings.API_V1_STR)
+app.include_router(analytics_router, prefix=settings.API_V1_STR)
+app.include_router(dr_router, prefix=settings.API_V1_STR)
+app.include_router(payment_router, prefix=settings.API_V1_STR)
+app.include_router(notification_router, prefix=settings.API_V1_STR)
+app.include_router(insurance_router, prefix=settings.API_V1_STR)
+app.include_router(termination_router, prefix=settings.API_V1_STR)
+app.include_router(claims_router, prefix=settings.API_V1_STR)
 
 app.add_route("/metrics", metrics_endpoint)
