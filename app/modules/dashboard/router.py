@@ -15,10 +15,7 @@ async def get_workshop_dashboard(
     tenant_id: str = Depends(get_tenant_id),
     _: dict = Depends(require_role(["owner", "manager"])),
 ):
-    """
-    Returns Workshop KPIs
-    """
-    return await kpi_service.get_workshop_kpis(tenant_id, period_days)
+    return await kpi_service.get_workshop_kpis(tenant_id, period_days, db)
 
 @router.get("/fleet")
 async def get_fleet_dashboard(
@@ -26,10 +23,7 @@ async def get_fleet_dashboard(
     tenant_id: str = Depends(get_tenant_id),
     _: dict = Depends(require_role(["fleet_admin", "manager", "owner"])),
 ):
-    """
-    Returns Fleet KPIs
-    """
-    return await kpi_service.get_fleet_kpis(tenant_id)
+    return await kpi_service.get_fleet_kpis(tenant_id, db)
 
 @router.get("/owner")
 async def get_owner_dashboard(
@@ -38,7 +32,4 @@ async def get_owner_dashboard(
     tenant_id: str = Depends(get_tenant_id),
     _: dict = Depends(require_role(["customer", "owner"])),
 ):
-    """
-    Returns Owner KPIs for a specific vehicle
-    """
-    return await kpi_service.get_owner_kpis(vehicle_id, tenant_id)
+    return await kpi_service.get_owner_kpis(vehicle_id, tenant_id, db)
