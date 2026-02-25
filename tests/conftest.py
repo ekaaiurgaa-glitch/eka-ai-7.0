@@ -1,106 +1,82 @@
 import pytest
-import pytest_asyncio
-import asyncio
-from typing import AsyncGenerator
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from httpx import AsyncClient, ASGITransport
-from app.main import app
+import uuid
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 from app.db.base import Base
-from app.core.dependencies import get_db
-from app.core.security import create_access_token
 
+# Assuming an SQLite test db for simplicity
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-TestSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest_asyncio.fixture
-async def db_session() -> AsyncGenerator[AsyncSession, None]:
+@pytest.fixture
+async def db_session():
+    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    async with TestSessionLocal() as session:
+        
+    TestingSessionLocal = sessionmaker(expire_on_commit=False, class_=AsyncSession, bind=engine)
+    async with TestingSessionLocal() as session:
         yield session
+        
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
-
-@pytest_asyncio.fixture
-async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    async def override_get_db():
-        yield db_session
-    app.dependency_overrides[get_db] = override_get_db
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        yield ac
-    app.dependency_overrides.clear()
-
+@pytest.fixture
+def test_tenant():
+    return str(uuid.uuid4())
 
 @pytest.fixture
-def auth_token() -> str:
-    return create_access_token(
-        data={
-            "sub": "test_user",
-            "tenant_id": "test_tenant",
-            "permissions": [
-                "chat_access",
-                "can_create_invoice",
-                "can_manage_jobs",
-                "can_manage_estimates",
-                "can_manage_vehicles",
-                "can_execute_operator",
-                "can_manage_catalog",
-            ],
-        }
-    )
-
+def test_tenant_2():
+    return str(uuid.uuid4())
 
 @pytest.fixture
-def auth_headers(auth_token: str) -> dict:
-    return {"Authorization": f"Bearer {auth_token}"}
+def auth_headers(test_tenant):
+    return {
+        "owner": {"Authorization": f"Bearer mock_token_owner_{test_tenant}"},
+        "manager": {"Authorization": f"Bearer mock_token_manager_{test_tenant}"},
+        "technician": {"Authorization": f"Bearer mock_token_tech_{test_tenant}"},
+        "customer": {"Authorization": f"Bearer mock_token_customer_{test_tenant}"}
+    }
 
-
-@pytest_asyncio.fixture
-async def async_client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    """Alias for client fixture for consistency."""
-    async def override_get_db():
-        yield db_session
-    app.dependency_overrides[get_db] = override_get_db
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        yield ac
-    app.dependency_overrides.clear()
-
-
-@pytest_asyncio.fixture
-async def test_job_card(async_client: AsyncClient, auth_token: str) -> dict:
-    """Create a test job card with brake complaint."""
-    # First create a vehicle
-    vehicle_response = await async_client.post(
-        "/api/v1/vehicles",
-        json={
-            "plate_number": "TEST123",
-            "make": "Honda",
-            "model": "City",
-            "year": 2020,
-            "fuel_type": "petrol",
-        },
-        headers={"Authorization": f"Bearer {auth_token}"},
-    )
-    vehicle = vehicle_response.json()
+class MockLLM:
+    def __init__(self):
+        self.response_text = "{}"
+        self.confidence = 90
+        self.fail = False
     
-    # Create job card
-    job_response = await async_client.post(
-        "/api/v1/job-cards",
-        json={
-            "vehicle_id": vehicle["id"],
-            "complaint": "brake pads worn, squeaking noise",
-        },
-        headers={"Authorization": f"Bearer {auth_token}"},
-    )
-    return job_response.json()
+    def set_response(self, text):
+        self.response_text = text
+    
+    def set_confidence(self, pct):
+        self.confidence = pct
+    
+    def set_failure(self, fail=True):
+        self.fail = fail
+
+@pytest.fixture
+def mock_llm():
+    return MockLLM()
+
+class FakeRedis:
+    def __init__(self):
+        self.data = {}
+        
+    async def incr(self, key):
+        self.data[key] = self.data.get(key, 0) + 1
+        return self.data[key]
+        
+    async def expire(self, key, time):
+        pass
+        
+    async def set(self, key, val, ex=None):
+        self.data[key] = val
+        
+    async def get(self, key):
+        return self.data.get(key)
+        
+    async def delete(self, key):
+        if key in self.data:
+            del self.data[key]
+
+@pytest.fixture
+def redis_client():
+    return FakeRedis()

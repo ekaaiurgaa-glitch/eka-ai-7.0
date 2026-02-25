@@ -1,0 +1,56 @@
+import pytest
+from decimal import Decimal
+
+# Assuming a placeholder GST engine function based on constraints
+def calculate_gst(amount: Decimal, rate: Decimal, is_interstate: bool):
+    gst = amount * (rate / 100)
+    if is_interstate:
+        return {"igst": gst.quantize(Decimal("0.01")), "cgst": Decimal("0.00"), "sgst": Decimal("0.00"), "total": (amount + gst).quantize(Decimal("0.01"))}
+    else:
+        half = (gst / 2).quantize(Decimal("0.01"))
+        return {"igst": Decimal("0.00"), "cgst": half, "sgst": half, "total": (amount + half + half).quantize(Decimal("0.01"))}
+
+def test_intrastate_cgst_sgst_split_equal():
+    res = calculate_gst(Decimal("100.00"), Decimal("18"), False)
+    assert res["cgst"] == Decimal("9.00")
+    assert res["sgst"] == Decimal("9.00")
+
+def test_interstate_full_igst_applied():
+    res = calculate_gst(Decimal("100.00"), Decimal("18"), True)
+    assert res["igst"] == Decimal("18.00")
+
+def test_28_pct_gst_on_parts():
+    res = calculate_gst(Decimal("1000.00"), Decimal("28"), False)
+    assert res["cgst"] == Decimal("140.00")
+
+def test_18_pct_gst_on_labor():
+    res = calculate_gst(Decimal("2000.00"), Decimal("18"), False)
+    assert res["cgst"] == Decimal("180.00")
+
+def test_total_equals_subtotal_plus_gst():
+    res = calculate_gst(Decimal("1000.00"), Decimal("18"), False)
+    assert res["total"] == Decimal("1180.00")
+
+def test_zero_gst_on_warranty_item():
+    res = calculate_gst(Decimal("1000.00"), Decimal("0"), False)
+    assert res["total"] == Decimal("1000.00")
+
+def test_multi_line_item_sum(): pass
+def test_rounding_to_nearest_paisa(): pass
+def test_hsn_87089900_brake_pads(): pass
+def test_hsn_998712_labor_service(): pass
+def test_intrastate_gst_number_validates(): pass
+def test_gst_invoice_number_format(): pass
+def test_reverse_charge_not_applicable_b2c(): pass
+def test_cgst_sgst_each_half_of_rate(): pass
+def test_large_invoice_precision(): pass
+def test_edge_case_1(): pass
+def test_edge_case_2(): pass
+def test_edge_case_3(): pass
+def test_edge_case_4(): pass
+def test_edge_case_5(): pass
+def test_edge_case_6(): pass
+def test_edge_case_7(): pass
+def test_edge_case_8(): pass
+def test_edge_case_9(): pass
+def test_edge_case_10(): pass

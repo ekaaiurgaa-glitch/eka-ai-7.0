@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+import sqlalchemy as sa
 from fastapi import HTTPException
 from . import model, schema
 from app.db.models import AuditLog
@@ -87,6 +88,22 @@ async def transition_job_card_state(db: AsyncSession, job_card_id: int, new_stat
             raise HTTPException(status_code=400, detail="Cannot move to REPAIR without an approved estimate.")
 
     old_state = db_job_card.state
+
+    if new_state == "READY" and old_state == "QC_PDI":
+        from app.modules.job_cards.pdi_models import PDIRecord
+        result = await db.execute(
+            select(PDIRecord).filter(
+                # Cast the job_card_id to string to match UUID since JobCard is integer currently
+                sa.cast(PDIRecord.job_card_id, sa.String) == str(job_card_id),
+                PDIRecord.overall_passed == True
+            )
+        )
+        pdi = result.scalar_one_or_none()
+        if not pdi:
+            raise HTTPException(status_code=409, detail="PDI not completed. Complete and pass PDI inspection before marking READY.")
+        if not pdi.photos or len(pdi.photos) == 0:
+            raise HTTPException(status_code=409, detail="PDI requires at least one photo. Upload photos before completing PDI.")
+
     db_job_card.state = new_state
     await _log_audit(db, "job_card", db_job_card.id, user_id, "transition_state", {"old_state": old_state, "new_state": new_state}, tenant_id)
     await db.commit()
