@@ -19,7 +19,7 @@ async def test_domain_gate_rejects_non_automobile():
 
 
 def test_context_gate_passes_with_vehicle():
-    vehicle = {"make": "Maruti", "model": "Swift", "year": 2019, "fuel": "petrol"}
+    vehicle = {"make": "Maruti", "model": "Swift", "year": 2019, "fuel_type": "petrol"}
     context_gate("Engine overheating issue", vehicle)
 
 
