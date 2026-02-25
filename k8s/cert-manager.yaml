@@ -1,0 +1,29 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: eka-service-cert
+  namespace: eka-ai
+spec:
+  secretName: eka-service-tls
+  duration: 24h
+  renewBefore: 1h
+  issuerRef:
+    name: eka-ca-issuer
+    kind: ClusterIssuer
+  commonName: eka-service
+  dnsNames:
+    - eka-service
+    - eka-service.eka-ai.svc.cluster.local
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+    - client auth
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: eka-ca-issuer
+spec:
+  ca:
+    secretName: eka-ca-key-pair

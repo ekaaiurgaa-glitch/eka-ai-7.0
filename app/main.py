@@ -25,6 +25,7 @@ from app.approvals.router import router as approvals_router
 from app.subscriptions.router import router as subscriptions_router
 from app.data_privacy.router import router as privacy_router
 from app.modules.auth.router import router as auth_router
+from app.modules.auth.refresh_router import router as refresh_router
 from app.modules.mg_engine.financial_router import router as mg_financial_router
 from app.modules.analytics.router import router as analytics_router
 from app.core.dr_router import router as dr_router
@@ -62,6 +63,7 @@ async def health_check_simple():
     return {"status": "healthy", "version": "1.0.0"}
 
 app.include_router(auth_router, prefix=settings.API_V1_STR)
+app.include_router(refresh_router, prefix=settings.API_V1_STR)
 
 setup_tracing(app)
 
