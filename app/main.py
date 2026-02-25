@@ -21,6 +21,9 @@ from app.modules.invoices.router import router as invoices_router
 from app.modules.vehicles.router import router as vehicles_router
 from app.modules.catalog.router import router as catalog_router
 from app.modules.knowledge.router import router as knowledge_router
+from app.approvals.router import router as approvals_router
+from app.subscriptions.router import router as subscriptions_router
+from app.data_privacy.router import router as privacy_router
 
 setup_logging(log_level=settings.LOG_LEVEL, json_logs=settings.JSON_LOGS)
 setup_sentry(settings.SENTRY_DSN)
@@ -31,18 +34,15 @@ async def lifespan(app: FastAPI):
     """
     Application lifespan handler.
     On startup: fires ML classifier training as a non-blocking background task.
-    Keyword fallback is active immediately; ML classification becomes active
-    once training finishes (typically 30–60s depending on API latency).
     """
     from app.ai.domain_classifier import auto_train_if_needed
     asyncio.create_task(auto_train_if_needed())
     yield
-    # Shutdown: nothing to clean up currently
 
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    version="8.0.0",
+    version="1.0.0",
     description="EKA-AI — Governed Automobile Intelligence Platform",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     lifespan=lifespan,
@@ -66,7 +66,7 @@ try:
 except Exception:
     _rate_limiting_enabled = False
 
-# Middleware stack (applied in reverse order of declaration)
+# Middleware stack
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -81,7 +81,7 @@ app.add_middleware(CorrelationIdMiddleware)
 
 @app.get("/", tags=["Root"])
 async def read_root():
-    return {"message": "Welcome to EKA-AI Platform v8.0", "status": "operational"}
+    return {"message": "Welcome to EKA-AI Platform v1.0", "status": "operational"}
 
 
 @app.get("/health", tags=["Health"])
@@ -93,7 +93,7 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         redis_ok = get_redis_client() is not None
         return {
             "status": "healthy",
-            "version": "8.0.0",
+            "version": "1.0.0",
             "database": "ok",
             "redis": "ok" if redis_ok else "degraded",
         }
@@ -109,7 +109,6 @@ async def login_for_access_token(
     """
     Development login endpoint.
     Default credentials: admin / admin (configurable via env)
-    Returns a JWT with full permissions embedded.
     """
     if form_data.username != settings.ADMIN_USERNAME or form_data.password != settings.ADMIN_PASSWORD:
         raise HTTPException(
@@ -121,6 +120,7 @@ async def login_for_access_token(
         data={
             "sub": form_data.username,
             "tenant_id": "tenant_admin",
+            "role": "owner",
             "permissions": [
                 "chat_access",
                 "can_create_invoice",
@@ -136,14 +136,17 @@ async def login_for_access_token(
 
 
 # Route registrations
-app.include_router(chat_router, prefix=settings.API_V1_STR, tags=["Chat"])
-app.include_router(job_cards_router, prefix=settings.API_V1_STR, tags=["Job Cards"])
-app.include_router(mg_engine_router, prefix=settings.API_V1_STR, tags=["MG Engine"])
-app.include_router(operator_router, prefix=settings.API_V1_STR, tags=["Operator"])
-app.include_router(dashboard_router, prefix=settings.API_V1_STR, tags=["Dashboard"])
-app.include_router(invoices_router, prefix=settings.API_V1_STR, tags=["Invoices"])
-app.include_router(vehicles_router, prefix=settings.API_V1_STR, tags=["Vehicles"])
-app.include_router(catalog_router, prefix=settings.API_V1_STR, tags=["Catalog"])
-app.include_router(knowledge_router, prefix=settings.API_V1_STR, tags=["Knowledge / RAG"])
+app.include_router(chat_router, prefix=settings.API_V1_STR)
+app.include_router(job_cards_router, prefix=settings.API_V1_STR)
+app.include_router(mg_engine_router, prefix=settings.API_V1_STR)
+app.include_router(operator_router, prefix=settings.API_V1_STR)
+app.include_router(dashboard_router, prefix=settings.API_V1_STR)
+app.include_router(invoices_router, prefix=settings.API_V1_STR)
+app.include_router(vehicles_router, prefix=settings.API_V1_STR)
+app.include_router(catalog_router, prefix=settings.API_V1_STR)
+app.include_router(knowledge_router, prefix=settings.API_V1_STR)
+app.include_router(approvals_router, prefix=settings.API_V1_STR)
+app.include_router(subscriptions_router, prefix=settings.API_V1_STR)
+app.include_router(privacy_router, prefix=settings.API_V1_STR)
 
 app.add_route("/metrics", metrics_endpoint)

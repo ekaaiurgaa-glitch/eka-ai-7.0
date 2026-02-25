@@ -5,10 +5,10 @@ from . import schema, service
 from app.core.dependencies import get_db, get_tenant_id
 from app.core.security import require_permission
 
-router = APIRouter()
+router = APIRouter(prefix="/catalog", tags=["Catalog"])
 
 
-@router.get("/catalog/parts", response_model=List[schema.Part])
+@router.get("/parts", response_model=List[schema.Part])
 async def list_parts(
     db: AsyncSession = Depends(get_db),
     tenant_id: str = Depends(get_tenant_id),
@@ -18,7 +18,7 @@ async def list_parts(
     return await service.list_parts(db, tenant_id)
 
 
-@router.get("/catalog/parts/{part_id}", response_model=schema.Part)
+@router.get("/parts/{part_id}", response_model=schema.Part)
 async def get_part(
     part_id: int,
     db: AsyncSession = Depends(get_db),
@@ -29,7 +29,7 @@ async def get_part(
     return await service.get_part(db, part_id, tenant_id)
 
 
-@router.post("/catalog/parts", response_model=schema.Part)
+@router.post("/parts", response_model=schema.Part)
 async def create_part(
     part: schema.PartCreate,
     db: AsyncSession = Depends(get_db),
@@ -40,7 +40,7 @@ async def create_part(
     return await service.create_part(db, part, tenant_id)
 
 
-@router.post("/catalog/labor-rates", response_model=schema.LaborRate)
+@router.post("/labor-rates", response_model=schema.LaborRate)
 async def create_labor_rate(
     rate: schema.LaborRateCreate,
     db: AsyncSession = Depends(get_db),

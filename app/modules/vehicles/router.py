@@ -5,10 +5,10 @@ from . import schema, service
 from app.core.dependencies import get_db, get_tenant_id
 from app.core.security import require_permission
 
-router = APIRouter()
+router = APIRouter(prefix="/vehicles", tags=["Vehicles"])
 
 
-@router.post("/vehicles", response_model=schema.Vehicle)
+@router.post("", response_model=schema.Vehicle)
 async def create_vehicle(
     vehicle: schema.VehicleCreate,
     db: AsyncSession = Depends(get_db),
@@ -19,7 +19,7 @@ async def create_vehicle(
     return await service.create_vehicle(db, vehicle, tenant_id)
 
 
-@router.get("/vehicles", response_model=List[schema.Vehicle])
+@router.get("", response_model=List[schema.Vehicle])
 async def list_vehicles(
     skip: int = 0,
     limit: int = 50,
@@ -31,7 +31,7 @@ async def list_vehicles(
     return await service.list_vehicles(db, tenant_id, skip, limit)
 
 
-@router.get("/vehicles/{vehicle_id}", response_model=schema.Vehicle)
+@router.get("/{vehicle_id}", response_model=schema.Vehicle)
 async def get_vehicle(
     vehicle_id: int,
     db: AsyncSession = Depends(get_db),
@@ -42,7 +42,7 @@ async def get_vehicle(
     return await service.get_vehicle(db, vehicle_id, tenant_id)
 
 
-@router.patch("/vehicles/{vehicle_id}", response_model=schema.Vehicle)
+@router.patch("/{vehicle_id}", response_model=schema.Vehicle)
 async def update_vehicle(
     vehicle_id: int,
     update: schema.VehicleUpdate,

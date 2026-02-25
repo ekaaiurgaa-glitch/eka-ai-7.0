@@ -14,10 +14,10 @@ class LLMUnavailableException(Exception):
     pass
 
 LLM_FALLBACK_CHAIN = [
-    {"provider": "google",    "model": "gemini-2.0-flash",  "priority": 1},
-    {"provider": "google",    "model": "gemini-1.5-pro",    "priority": 2},
-    {"provider": "openai",    "model": "gpt-4o-mini",       "priority": 3},
-    {"provider": "anthropic", "model": "claude-3-haiku-20240307", "priority": 4},
+    {"provider": "google",    "model": "gemini-3-flash-preview",  "priority": 1},
+    {"provider": "google",    "model": "gemini-1.5-pro",          "priority": 2},
+    {"provider": "openai",    "model": "gpt-4o-mini",             "priority": 3},
+    {"provider": "anthropic", "model": "claude-3-haiku-20240307",   "priority": 4},
 ]
 
 class LLMClient:
@@ -64,11 +64,15 @@ class LLMClient:
         raise LLMUnavailableException("All LLM providers in fallback chain failed.")
 
     async def _call_google(self, model: str, messages: List[Dict[str, str]], tools: Any, temperature: float, top_p: float, thinking_level: str) -> LLMResponse:
-        # Mock logic, would use google-generativeai SDK
-        # Set thinking_config={"thinking_budget": 8192} if thinking_level="HIGH"
-        # Since this is a skeleton without actual secrets, returning mock
-        from app.ai.intelligence_service import _mock_intelligence_response
-        query = messages[-1]["content"] if messages else ""
+        # BRD mandated config
+        config = {
+            "temperature": temperature,
+            "top_p": top_p,
+            "max_output_tokens": 2048,
+        }
+        if thinking_level == "HIGH":
+            config["thinking_config"] = {"thinking_budget": 8192}
+            
         content = await _mock_intelligence_response(query)
         if isinstance(content, dict):
             import json

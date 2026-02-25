@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 from enum import Enum
 
@@ -15,6 +15,7 @@ class WarrantyStatus(str, Enum):
 class UsageType(str, Enum):
     personal = "personal"
     commercial = "commercial"
+    ride_sharing = "ride-sharing"
 
 class MGCalculationRequest(BaseModel):
     make: str
@@ -32,6 +33,10 @@ class MGCalculationResponse(BaseModel):
     annual_labor: float
     city_adj: float
     risk_adj: float
+    risk_buffer_pct: float
+    risk_level: str  # low, medium, high
     final_annual_cost: float
     monthly_mg: float
     notes: str
+    
+    model_config = ConfigDict(from_attributes=True)

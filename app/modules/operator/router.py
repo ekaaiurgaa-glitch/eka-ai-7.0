@@ -4,10 +4,10 @@ from . import schema, tool_handler
 from app.core.dependencies import get_db, get_tenant_id
 from app.core.security import require_permission
 
-router = APIRouter()
+router = APIRouter(prefix="/operator", tags=["Operator"])
 
 
-@router.post("/operator/execute", response_model=schema.OperatorPreviewResponse)
+@router.post("/execute", response_model=schema.OperatorPreviewResponse)
 async def execute_operator_action(
     request: schema.OperatorExecuteRequest,
     db: AsyncSession = Depends(get_db),
@@ -17,7 +17,7 @@ async def execute_operator_action(
     return await tool_handler.generate_preview(db, request)
 
 
-@router.post("/operator/confirm", response_model=schema.OperatorExecutionResponse)
+@router.post("/confirm", response_model=schema.OperatorExecutionResponse)
 async def confirm_operator_action(
     request: schema.OperatorConfirmRequest,
     db: AsyncSession = Depends(get_db),

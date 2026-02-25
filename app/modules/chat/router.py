@@ -5,10 +5,10 @@ from app.core.dependencies import get_db, get_tenant_id
 from app.core.security import require_permission
 from app.core.config import settings
 
-router = APIRouter()
+router = APIRouter(prefix="/chat", tags=["Chat"])
 
 
-@router.post("/chat/query", response_model=schema.ChatQueryResponse)
+@router.post("/query", response_model=schema.ChatQueryResponse)
 async def query_chat(
     request: schema.ChatQueryRequest,
     http_request: Request,
@@ -18,24 +18,17 @@ async def query_chat(
 ):
     """
     Provides structured, domain-locked automobile intelligence.
-    - Validates request via Governance Gates.
-    - Performs RAG against knowledge DB when required.
-    - Returns structured responses.
-    Rate limited to 20 requests/minute per IP.
     """
     request.tenant_id = tenant_id
     user_id = current_user.get("sub")
     return await service.process_chat_query(db, request, user_id)
 
 
-@router.get("/chat/examples")
+@router.get("/examples")
 async def get_chat_examples():
     return {
         "example1": {
             "query": "My car is making a grinding noise when I brake.",
             "vehicle": {"make": "Maruti", "model": "Swift", "year": 2019, "fuel": "petrol"},
-        },
-        "example2": {
-            "query": "What are the common causes of engine overheating?",
-        },
+        }
     }

@@ -3,8 +3,9 @@ from typing import Optional, Any
 from datetime import datetime
 
 class OperatorExecuteRequest(BaseModel):
-    intent: str
-    args: dict
+    intent: Optional[str] = None
+    args: Optional[dict] = None
+    raw_query: Optional[str] = None # Added for NLP intent detection (P1-10)
     tenant_id: str
     actor_id: str
     dry_run: bool = True
@@ -22,6 +23,6 @@ class OperatorConfirmRequest(BaseModel):
     actor_id: str
 
 class OperatorExecutionResponse(BaseModel):
-    execution_id: str
+    execution_id: Optional[str] = None
     status: str
-    result: Optional[Any]
+    result: Optional[Any] = None

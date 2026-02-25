@@ -9,7 +9,7 @@ from app.core.rbac import require_role
 from .export_service import request_export, DataExportRequest
 from .deletion_service import request_account_deletion, delete_customer_pii
 
-router = APIRouter(prefix="/v1", tags=["privacy"])
+router = APIRouter(prefix="/privacy", tags=["Privacy"])
 
 class ExportRequestSchema(BaseModel):
     export_type: str
@@ -24,7 +24,7 @@ class CustomerDeleteRequest(BaseModel):
 async def request_export_data(
     req: ExportRequestSchema,
     db: AsyncSession = Depends(get_db),
-    tenant_id: UUID = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id),
     user: dict = Depends(require_role(["owner"])),
 ):
     export_req = await request_export(
@@ -42,7 +42,7 @@ async def request_export_data(
 async def check_export_status(
     request_id: UUID,
     db: AsyncSession = Depends(get_db),
-    tenant_id: UUID = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id),
     _: dict = Depends(require_role(["owner"])),
 ):
     from sqlalchemy import select
@@ -58,7 +58,7 @@ async def check_export_status(
 async def download_export(
     request_id: UUID,
     db: AsyncSession = Depends(get_db),
-    tenant_id: UUID = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id),
     _: dict = Depends(require_role(["owner"])),
 ):
     from sqlalchemy import select
@@ -78,19 +78,19 @@ async def download_export(
         
     return {"download_url": export_req.s3_url}
 
-@router.post("/privacy/delete-account")
+@router.post("/delete-account")
 async def schedule_account_deletion(
     db: AsyncSession = Depends(get_db),
-    tenant_id: UUID = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id),
     user: dict = Depends(require_role(["owner"])),
 ):
     res = await request_account_deletion(db, tenant_id, UUID(user["sub"]))
     return res
 
-@router.post("/privacy/cancel-deletion")
+@router.post("/cancel-deletion")
 async def cancel_pending_deletion(
     db: AsyncSession = Depends(get_db),
-    tenant_id: UUID = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id),
     _: dict = Depends(require_role(["owner"])),
 ):
     from sqlalchemy import text
@@ -101,11 +101,11 @@ async def cancel_pending_deletion(
     await db.commit()
     return {"message": "Account deletion cancelled"}
 
-@router.post("/privacy/delete-customer")
+@router.post("/delete-customer")
 async def right_to_erasure_customer(
     req: CustomerDeleteRequest,
     db: AsyncSession = Depends(get_db),
-    tenant_id: UUID = Depends(get_tenant_id),
+    tenant_id: str = Depends(get_tenant_id),
     _: dict = Depends(require_role(["owner"])),
 ):
     res = await delete_customer_pii(db, req.customer_id, tenant_id)

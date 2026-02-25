@@ -6,7 +6,7 @@ from . import service
 from app.core.dependencies import get_db, get_tenant_id
 from app.core.security import require_permission
 
-router = APIRouter()
+router = APIRouter(prefix="/knowledge", tags=["Knowledge / RAG"])
 
 
 class IngestRequest(BaseModel):
@@ -27,7 +27,7 @@ class SearchResult(BaseModel):
     chunk_index: int
 
 
-@router.post("/knowledge/ingest", response_model=IngestResponse)
+@router.post("/ingest", response_model=IngestResponse)
 async def ingest_document(
     request: IngestRequest,
     db: AsyncSession = Depends(get_db),
@@ -39,7 +39,7 @@ async def ingest_document(
     return IngestResponse(chunks_created=n, title=request.title)
 
 
-@router.get("/knowledge/search", response_model=List[SearchResult])
+@router.get("/search", response_model=List[SearchResult])
 async def search_knowledge(
     q: str,
     db: AsyncSession = Depends(get_db),
