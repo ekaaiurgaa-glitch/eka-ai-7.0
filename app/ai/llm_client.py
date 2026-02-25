@@ -14,7 +14,7 @@ class LLMUnavailableException(Exception):
     pass
 
 LLM_FALLBACK_CHAIN = [
-    {"provider": "google",    "model": "gemini-3-flash-preview",  "priority": 1},
+    {"provider": "google",    "model": "gemini-2.0-flash",  "priority": 1},
     {"provider": "google",    "model": "gemini-1.5-pro",          "priority": 2},
     {"provider": "openai",    "model": "gpt-4o-mini",             "priority": 3},
     {"provider": "anthropic", "model": "claude-3-haiku-20240307",   "priority": 4},
@@ -65,11 +65,17 @@ class LLMClient:
 
     async def _call_google(self, model: str, messages: List[Dict[str, str]], tools: Any, temperature: float, top_p: float, thinking_level: str) -> LLMResponse:
         from app.ai.intelligence_service import _mock_intelligence_response
-        # BRD mandated config
+        # TDD Section 4.1.3 mandated config
         config = {
             "temperature": temperature,
             "top_p": top_p,
-            "max_output_tokens": 2048,
+            "max_output_tokens": 1024,
+            "safety_settings": [
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
+                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
+                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"}
+            ]
         }
         if thinking_level == "HIGH":
             config["thinking_config"] = {"thinking_budget": 8192}
