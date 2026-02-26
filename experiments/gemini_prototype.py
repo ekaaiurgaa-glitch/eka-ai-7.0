@@ -1,3 +1,26 @@
+###############################################################################
+# ⚠️  WARNING: GOVERNANCE VIOLATION - PROTOTYPE ONLY - NOT FOR PRODUCTION  ⚠️
+###############################################################################
+#
+# This file is an EXPERIMENTAL PROTOTYPE that contains CRITICAL GOVERNANCE VIOLATIONS:
+# 
+#   1. BYPASSES CONFIRMATION STEP for operational actions (create_job_card, etc.)
+#   2. Directly executes function calls without user approval
+#   3. Violates EKA-AI Constitution Article 4: "Never auto-execute irreversible action"
+#
+# This script was used for early Gemini API testing only.
+# 
+# PRODUCTION CODE must use:
+#   - app/modules/operator/ with confirmation previews
+#   - Proper permission gates
+#   - Explicit user confirmation before any DB writes
+#
+# DO NOT USE THIS FILE IN PRODUCTION.
+# DO NOT COPY PATTERNS FROM THIS FILE.
+# SEE: app/modules/operator/ for compliant implementation.
+#
+###############################################################################
+
 # To run this code you need to install the following dependencies:
 # pip install google-genai
 

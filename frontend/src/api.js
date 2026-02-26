@@ -32,7 +32,17 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
-    }).then(r => r.json());
+    }).then(async (r) => {
+      const text = await r.text();
+      if (!text) {
+        throw new Error('Unable to connect to EKA services. Please try again in a few moments.');
+      }
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        throw new Error('An unexpected error occurred. Please try again.');
+      }
+    });
   },
 
   // Chat

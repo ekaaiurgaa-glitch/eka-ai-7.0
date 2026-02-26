@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search, Filter, AlertTriangle } from 'lucide-react';
+import { useSubscription } from '../context/SubscriptionContext';
+import SubscriptionUpgradeModal from '../components/SubscriptionUpgradeModal';
 
 const MOCK_JOBS = [
     { id: 1, job_no: 'JC-0047', vehicle: 'KA-01-MJ-1234 • Maruti Swift', complaint: 'Grinding noise when braking', state: 'REPAIR', created_at: '2026-02-25T09:15:00' },
@@ -19,9 +21,13 @@ const stateConfig = {
 };
 
 export default function JobsPage() {
+    const { canPerformAction, incrementUsage, checkJobCardLimit } = useSubscription();
     const [filter, setFilter] = useState('');
     const [search, setSearch] = useState('');
     const [showCreate, setShowCreate] = useState(false);
+    const [showUpgrade, setShowUpgrade] = useState(false);
+    
+    const jobLimitStatus = checkJobCardLimit();
 
     const filtered = MOCK_JOBS.filter(j => {
         if (filter && j.state !== filter) return false;
@@ -29,14 +35,79 @@ export default function JobsPage() {
         return true;
     });
 
+    const handleCreateClick = () => {
+        const check = canPerformAction('job_card_create');
+        if (!check.allowed) {
+            setShowUpgrade(true);
+            return;
+        }
+        setShowCreate(!showCreate);
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        // Simulate API call
+        setTimeout(() => {
+            incrementUsage('job_cards_created', 1);
+            setShowCreate(false);
+        }, 500);
+    };
+
     return (
         <div className="fade-in">
             <div className="main__header">
                 <h2>Job Cards</h2>
-                <button className="btn btn--primary" onClick={() => setShowCreate(!showCreate)}>
+                <button 
+                    className="btn btn--primary" 
+                    onClick={handleCreateClick}
+                    disabled={jobLimitStatus.isAtLimit}
+                >
                     <Plus size={18} /> New Job Card
                 </button>
             </div>
+            
+            {/* Limit Warning */}
+            {jobLimitStatus.isNearLimit && !jobLimitStatus.isAtLimit && (
+                <div style={{ 
+                    background: 'rgba(234,179,8,0.1)', 
+                    border: '1px solid rgba(234,179,8,0.3)',
+                    borderRadius: 8,
+                    padding: '12px 16px',
+                    marginBottom: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                }}>
+                    <AlertTriangle size={16} color="var(--warning)" />
+                    <span style={{ fontSize: '0.86rem', flex: 1 }}>
+                        Approaching monthly job card limit ({jobLimitStatus.remaining} remaining)
+                    </span>
+                    <button className="btn btn--ghost btn--sm" onClick={() => setShowUpgrade(true)}>
+                        Upgrade
+                    </button>
+                </div>
+            )}
+            
+            {jobLimitStatus.isAtLimit && (
+                <div style={{ 
+                    background: 'rgba(239,68,68,0.1)', 
+                    border: '1px solid rgba(239,68,68,0.3)',
+                    borderRadius: 8,
+                    padding: '12px 16px',
+                    marginBottom: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                }}>
+                    <AlertTriangle size={16} color="var(--danger)" />
+                    <span style={{ fontSize: '0.86rem', flex: 1, color: 'var(--danger)' }}>
+                        Monthly job card limit reached. Upgrade to create more.
+                    </span>
+                    <button className="btn btn--primary btn--sm" onClick={() => setShowUpgrade(true)}>
+                        Upgrade
+                    </button>
+                </div>
+            )}
 
             {/* Create Form */}
             {showCreate && (
@@ -47,7 +118,7 @@ export default function JobsPage() {
                         <div><label>Complaint</label><input className="input" placeholder="Customer complaint description" /></div>
                     </div>
                     <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-                        <button className="btn btn--primary btn--sm">Create</button>
+                        <button className="btn btn--primary btn--sm" onClick={handleSubmit}>Create</button>
                         <button className="btn btn--ghost btn--sm" onClick={() => setShowCreate(false)}>Cancel</button>
                     </div>
                 </div>

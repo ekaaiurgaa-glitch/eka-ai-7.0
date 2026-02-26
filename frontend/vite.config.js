@@ -10,8 +10,17 @@ export default defineConfig({
       '/api': {
         target: process.env.VITE_BACKEND_URL || 'http://localhost:8001',
         changeOrigin: true,
+        configure: (proxy, options) => {
+          proxy.on('error', (err, req, res) => {
+            console.error('Proxy error:', err.message);
+          });
+        },
       },
       '/token': {
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:8001',
+        changeOrigin: true,
+      },
+      '/health': {
         target: process.env.VITE_BACKEND_URL || 'http://localhost:8001',
         changeOrigin: true,
       }

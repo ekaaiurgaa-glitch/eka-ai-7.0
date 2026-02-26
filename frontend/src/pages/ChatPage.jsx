@@ -1,7 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles } from 'lucide-react';
+import { Send, Bot, User, Sparkles, AlertTriangle } from 'lucide-react';
+import { useSubscription } from '../context/SubscriptionContext';
+import SubscriptionUpgradeModal from '../components/SubscriptionUpgradeModal';
 
 export default function ChatPage() {
+    const { canPerformAction, incrementUsage } = useSubscription();
+    const [showUpgrade, setShowUpgrade] = useState(false);
+    const [limitWarning, setLimitWarning] = useState(null);
     const [messages, setMessages] = useState([
         {
             role: 'ai',
@@ -18,6 +23,17 @@ export default function ChatPage() {
 
     const sendMessage = async () => {
         if (!input.trim() || loading) return;
+        
+        // Check token limit before sending
+        const check = canPerformAction('chat');
+        if (!check.allowed) {
+            setShowUpgrade(true);
+            return;
+        }
+        if (check.warning) {
+            setLimitWarning(check.warning);
+        }
+        
         const userMsg = input.trim();
         setInput('');
         setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
@@ -42,6 +58,10 @@ export default function ChatPage() {
             const formatted = `**Issue Summary**\n${data.issue_summary}\n\n**Probable Causes**\n${(data.probable_causes || []).map(c => `• ${c}`).join('\n')}\n\n**Diagnostic Steps**\n${(data.diagnostic_steps || []).map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\n**Safety Advisory**\n⚠️ ${data.safety_advisory}\n\n**Confidence**: ${data.confidence_level}%${data.tokens_used ? ` • **Tokens**: ${data.tokens_used}` : ''}`;
 
             setMessages(prev => [...prev, { role: 'ai', content: formatted }]);
+            
+            // Estimate token usage (rough estimate)
+            const estimatedTokens = Math.ceil((userMsg.length + formatted.length) / 4);
+            incrementUsage('tokens_consumed', estimatedTokens);
         } catch (err) {
             setMessages(prev => [...prev, { role: 'ai', content: `❌ Error: ${err.message}`, isError: true }]);
         } finally {
@@ -59,6 +79,35 @@ export default function ChatPage() {
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', marginTop: 4 }}>
                         Domain-locked • 4-gate governed • RAG-augmented
                     </p>
+                    {limitWarning && (
+                        <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 6, 
+                            marginTop: 8,
+                            padding: '6px 12px',
+                            background: 'rgba(234,179,8,0.1)',
+                            borderRadius: 6,
+                            fontSize: '0.78rem',
+                            color: 'var(--warning)',
+                        }}>
+                            <AlertTriangle size={12} />
+                            {limitWarning}
+                            <button 
+                                onClick={() => setShowUpgrade(true)}
+                                style={{ 
+                                    color: 'var(--accent)', 
+                                    textDecoration: 'underline',
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontSize: 'inherit',
+                                }}
+                            >
+                                Upgrade
+                            </button>
+                        </div>
+                    )}
                 </div>
                 <button className="btn btn--ghost btn--sm" onClick={() => setShowVehicle(!showVehicle)}>
                     {showVehicle ? 'Hide' : 'Set'} Vehicle Context
@@ -129,6 +178,11 @@ export default function ChatPage() {
                     </button>
                 </div>
             </div>
+            
+            <SubscriptionUpgradeModal 
+                isOpen={showUpgrade} 
+                onClose={() => setShowUpgrade(false)} 
+            />
         </div>
     );
 }

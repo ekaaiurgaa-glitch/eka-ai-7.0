@@ -98,10 +98,10 @@ slowapi
 
 ## Remaining Known Issues (Not Blocking)
 
-### #1 - Root `main.py` governance violation (P0 - Documentation)
-**Issue:** Root-level `main.py` contains prototype script that bypasses confirmation step
-**Status:** Documented, needs isolation/removal before production
-**Action:** Move to `experiments/` or `prototypes/` directory
+### ✅ #1 - Root `main.py` governance violation (P0 - Fixed)
+**Issue:** Root-level `main.py` contained prototype script that bypasses confirmation step
+**Fix:** Moved to `experiments/gemini_prototype.py` with prominent governance warning header
+**Impact:** Prototype is isolated and clearly marked as non-production code with governance violations
 
 ### Phase 3/4 Items (By Design)
 - `monthly_km` not used in MG formula (awaiting business logic)

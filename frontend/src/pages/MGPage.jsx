@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Calculator, Shield, AlertTriangle } from 'lucide-react';
+import FeatureGate from '../components/FeatureGate';
 
 export default function MGPage() {
     const [form, setForm] = useState({
@@ -34,6 +35,8 @@ export default function MGPage() {
                     <Shield size={22} color="var(--accent)" /> MG Engine
                 </h2>
             </div>
+            
+            <FeatureGate feature="mg_calculator">
 
             <div className="grid grid--2">
                 {/* Input Form */}
@@ -110,6 +113,7 @@ export default function MGPage() {
                     )}
                 </div>
             </div>
+            </FeatureGate>
         </div>
     );
 }

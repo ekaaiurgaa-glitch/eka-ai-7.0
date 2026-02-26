@@ -25,7 +25,7 @@ export function AuthProvider({ children }) {
             setToken(res.access_token);
             return true;
         }
-        throw new Error(res.detail || 'Login failed');
+        throw new Error(res.detail || res.message || 'Login failed');
     };
 
     const logout = () => {

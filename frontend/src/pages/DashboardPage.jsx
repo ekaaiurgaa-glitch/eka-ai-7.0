@@ -1,39 +1,39 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, ClipboardList, Clock, AlertTriangle, DollarSign, Users, Activity } from 'lucide-react';
+import { TrendingUp, ClipboardList, Clock, DollarSign, Activity, Sparkles, Crown } from 'lucide-react';
+import { useSubscription } from '../context/SubscriptionContext';
+import UsageBar from '../components/UsageBar';
+import SubscriptionUpgradeModal from '../components/SubscriptionUpgradeModal';
+
+const MOCK_KPIS = {
+    monthly_revenue: 487500,
+    profit_margin_pct: 34.5,
+    jobs_open: 8,
+    jobs_in_progress: 14,
+    jobs_closed_today: 6,
+    pending_approvals: 3,
+    avg_tat_hours: 4.2,
+    mg_contracts_active: 23,
+};
+
+const ACTIVITY_ITEMS = [
+    { time: '2 min ago', text: 'Job #JC-0047 moved to REPAIR', type: 'info' },
+    { time: '15 min ago', text: 'Invoice INV-0023 generated — ₹12,400', type: 'success' },
+    { time: '32 min ago', text: 'MG Contract MG-0012 activated for KA-05-MJ-4521', type: 'accent' },
+    { time: '1 hr ago', text: 'Customer approved estimate for JC-0045', type: 'success' },
+    { time: '2 hr ago', text: 'Low stock alert: Brake Pads (Qty: 2)', type: 'warning' },
+    { time: '3 hr ago', text: 'New job card JC-0046 created', type: 'info' },
+];
 
 export default function DashboardPage() {
-    const [kpis, setKpis] = useState(null);
-
-    useEffect(() => {
-        // Simulated KPIs (would come from /api/v1/dashboards/workshop)
-        setKpis({
-            monthly_revenue: 487500,
-            profit_margin_pct: 34.5,
-            jobs_open: 8,
-            jobs_in_progress: 14,
-            jobs_closed_today: 6,
-            pending_approvals: 3,
-            avg_tat_hours: 4.2,
-            mg_contracts_active: 23,
-        });
-    }, []);
-
-    if (!kpis) return null;
+    const { isFree, hasFeature } = useSubscription();
+    const [showUpgrade, setShowUpgrade] = useState(false);
+    const [kpis, setKpis] = useState(MOCK_KPIS);
 
     const statCards = [
         { label: 'Monthly Revenue', value: `₹${(kpis.monthly_revenue / 1000).toFixed(0)}K`, icon: DollarSign, color: 'var(--success)' },
         { label: 'Profit Margin', value: `${kpis.profit_margin_pct}%`, icon: TrendingUp, color: 'var(--accent-hover)' },
         { label: 'Open Jobs', value: kpis.jobs_open, icon: ClipboardList, color: 'var(--info)' },
         { label: 'Avg TAT', value: `${kpis.avg_tat_hours}h`, icon: Clock, color: 'var(--warning)' },
-    ];
-
-    const activityItems = [
-        { time: '2 min ago', text: 'Job #JC-0047 moved to REPAIR', type: 'info' },
-        { time: '15 min ago', text: 'Invoice INV-0023 generated — ₹12,400', type: 'success' },
-        { time: '32 min ago', text: 'MG Contract MG-0012 activated for KA-05-MJ-4521', type: 'accent' },
-        { time: '1 hr ago', text: 'Customer approved estimate for JC-0045', type: 'success' },
-        { time: '2 hr ago', text: 'Low stock alert: Brake Pads (Qty: 2)', type: 'warning' },
-        { time: '3 hr ago', text: 'New job card JC-0046 created', type: 'info' },
     ];
 
     return (
@@ -45,11 +45,59 @@ export default function DashboardPage() {
                         Real-time overview • {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="status-dot status-dot--open" style={{ animation: 'pulse 2s infinite' }} />
-                    <span style={{ fontSize: '0.82rem', color: 'var(--success)' }}>System Operational</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {isFree && (
+                        <button 
+                            className="btn btn--primary"
+                            onClick={() => setShowUpgrade(true)}
+                        >
+                            <Crown size={16} style={{ marginRight: 6 }} />
+                            Upgrade Plan
+                        </button>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span className="status-dot status-dot--open" style={{ animation: 'pulse 2s infinite' }} />
+                        <span style={{ fontSize: '0.82rem', color: 'var(--success)' }}>System Operational</span>
+                    </div>
                 </div>
             </div>
+
+            {/* Usage Bar for Free Users */}
+            {isFree && <UsageBar />}
+
+            {/* Premium Features Promo (for free users) */}
+            {isFree && (
+                <div style={{ 
+                    background: 'linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%)',
+                    borderRadius: 12,
+                    padding: '20px 24px',
+                    marginBottom: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                }}>
+                    <div style={{ color: 'white' }}>
+                        <div style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: 4 }}>
+                            <Sparkles size={18} style={{ display: 'inline', marginRight: 8 }} />
+                            Unlock Premium Features
+                        </div>
+                        <div style={{ fontSize: '0.86rem', opacity: 0.9 }}>
+                            Get MG Calculator, Advanced Analytics, Operator AI, and more
+                        </div>
+                    </div>
+                    <button 
+                        className="btn"
+                        onClick={() => setShowUpgrade(true)}
+                        style={{ 
+                            background: 'white', 
+                            color: 'var(--accent)',
+                            fontWeight: 600,
+                        }}
+                    >
+                        View Plans
+                    </button>
+                </div>
+            )}
 
             {/* KPI Cards */}
             <div className="grid grid--4" style={{ marginBottom: 28 }}>
@@ -100,7 +148,7 @@ export default function DashboardPage() {
                 <div className="card">
                     <div className="card__title">Recent Activity</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
-                        {activityItems.map((item, i) => (
+                        {ACTIVITY_ITEMS.map((item, i) => (
                             <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                                 <div style={{
                                     width: 8, height: 8, borderRadius: '50%', marginTop: 7, flexShrink: 0,
@@ -117,6 +165,11 @@ export default function DashboardPage() {
                     </div>
                 </div>
             </div>
+
+            <SubscriptionUpgradeModal 
+                isOpen={showUpgrade} 
+                onClose={() => setShowUpgrade(false)} 
+            />
         </div>
     );
 }
