@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth, SubscriptionProvider, ThemeProvider } from './context';
 import Sidebar from './components/Sidebar';
+import ShortcutsHelpModal from './components/ShortcutsHelpModal';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import ChatPage from './pages/ChatPage';
@@ -13,7 +14,7 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import OperatorPage from './pages/OperatorPage';
 import ApprovalsPage from './pages/ApprovalsPage';
 import JobCardDetailPage from './pages/JobCardDetailPage';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -22,10 +23,16 @@ function ProtectedRoute({ children }) {
 
 function AppLayout() {
   const navigate = useNavigate();
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl + J: New Job Card
+      // Ignore if typing in input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      // Ctrl + J: Job Cards
       if (e.ctrlKey && e.key === 'j') {
         e.preventDefault();
         navigate('/app/jobs');
@@ -38,13 +45,18 @@ function AppLayout() {
       // Ctrl + D: Dashboard
       if (e.ctrlKey && e.key === 'd') {
         e.preventDefault();
-        navigate('/app/dashboard');
+        navigate('/app');
       }
-      // Ctrl + F: Search (focus existing search input)
+      // Ctrl + F: Search
       if (e.ctrlKey && e.key === 'f') {
         e.preventDefault();
-        const searchInput = document.querySelector('input[placeholder*="Search"]');
+        const searchInput = document.querySelector('input[placeholder*="Search"], input[placeholder*="search"]');
         if (searchInput) searchInput.focus();
+      }
+      // ?: Show shortcuts help
+      if (e.key === '?') {
+        e.preventDefault();
+        setShowShortcuts(true);
       }
     };
 
@@ -69,6 +81,10 @@ function AppLayout() {
           <Route path="/mg" element={<MGPage />} />
         </Routes>
       </main>
+      <ShortcutsHelpModal 
+        isOpen={showShortcuts} 
+        onClose={() => setShowShortcuts(false)} 
+      />
     </>
   );
 }
