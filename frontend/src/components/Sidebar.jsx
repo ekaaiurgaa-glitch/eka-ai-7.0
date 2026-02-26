@@ -1,18 +1,18 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { useAuth, useSubscription } from '../context';
+import { useAuth, useSubscription, useTheme } from '../context';
 import {
     LayoutDashboard, MessageSquare, ClipboardList, Car,
     Shield, LogOut, Wrench, Cpu, FileText,
-    TrendingUp, CheckSquare, Crown,
+    TrendingUp, CheckSquare, Crown, Sun, Moon
 } from 'lucide-react';
 import SubscriptionUpgradeModal from './SubscriptionUpgradeModal';
 
 const navItems = [
-    { to: '/app', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/app', icon: LayoutDashboard, label: 'Dashboard', shortcut: 'Ctrl+D' },
     { to: '/app/chat', icon: MessageSquare, label: 'EKA Intelligence' },
-    { to: '/app/operator', icon: Cpu, label: 'Operator AI' },
-    { to: '/app/jobs', icon: ClipboardList, label: 'Job Cards' },
+    { to: '/app/operator', icon: Cpu, label: 'Operator AI', shortcut: 'Ctrl+O' },
+    { to: '/app/jobs', icon: ClipboardList, label: 'Job Cards', shortcut: 'Ctrl+J' },
     { to: '/app/vehicles', icon: Car, label: 'Vehicles' },
     { to: '/app/invoices', icon: FileText, label: 'Invoices' },
     { to: '/app/approvals', icon: CheckSquare, label: 'Approvals' },
@@ -23,6 +23,7 @@ const navItems = [
 export default function Sidebar() {
     const { user, logout } = useAuth();
     const { currentPlan, isFree, getUsageDisplay } = useSubscription();
+    const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
     const [showUpgrade, setShowUpgrade] = useState(false);
 
@@ -54,11 +55,26 @@ export default function Sidebar() {
                             }
                         >
                             <Icon size={18} />
-                            {item.label}
+                            <span style={{ flex: 1 }}>{item.label}</span>
+                            {item.shortcut && (
+                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', opacity: 0.6 }}>{item.shortcut}</span>
+                            )}
                         </NavLink>
                     );
                 })}
             </nav>
+
+            {/* Theme Toggle */}
+            <div style={{ padding: '0 12px', marginBottom: 16 }}>
+                <button
+                    className="sidebar__link"
+                    onClick={toggleTheme}
+                    style={{ border: 'none', width: '100%', cursor: 'pointer', background: 'var(--bg-glass)', justifyContent: 'center' }}
+                >
+                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                    {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                </button>
+            </div>
 
             {/* Usage & Subscription */}
             {isFree && (

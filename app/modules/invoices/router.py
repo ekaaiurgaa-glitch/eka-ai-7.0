@@ -93,7 +93,7 @@ async def download_invoice(
     job_card = await get_job_card(db, db_invoice.job_id, tenant_id)
     vehicle = await get_vehicle(db, job_card.vehicle_id, tenant_id)
     
-    result = await db.execute(sa.select(Tenant).where(Tenant.id == tenant_id))
+    result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
     tenant = result.scalar_one_or_none()
     
     # 3. Prepare objects for PDF

@@ -51,6 +51,14 @@ class Settings(BaseSettings):
     # Tracing
     JAEGER_ENDPOINT: Optional[str] = os.getenv("JAEGER_ENDPOINT", "http://localhost:4317")
 
+    # Notifications (P2-3)
+    TWILIO_ACCOUNT_SID: Optional[str] = os.getenv("TWILIO_ACCOUNT_SID")
+    TWILIO_AUTH_TOKEN: Optional[str] = os.getenv("TWILIO_AUTH_TOKEN")
+    TWILIO_FROM_NUMBER: Optional[str] = os.getenv("TWILIO_FROM_NUMBER")
+    
+    SENDGRID_API_KEY: Optional[str] = os.getenv("SENDGRID_API_KEY")
+    FROM_EMAIL: str = os.getenv("FROM_EMAIL", "notifications@eka.ai")
+
     model_config = {"case_sensitive": True}
 
 

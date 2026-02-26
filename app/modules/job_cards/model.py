@@ -14,6 +14,7 @@ class JobCard(Base, TenantMixin, TimestampMixin):
 
     # Relationships
     estimates = relationship("Estimate", back_populates="job_card")
+    vehicle = relationship("app.modules.vehicles.model.Vehicle")
 
 
 class Estimate(Base, TenantMixin, TimestampMixin):

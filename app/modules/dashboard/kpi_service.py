@@ -99,6 +99,35 @@ async def get_workshop_kpis(tenant_id: str, period_days: int, db: AsyncSession) 
     cache_set(cache_key, ret, ttl=300)
     return ret
 
+async def get_analytics_trends(tenant_id: str, db: AsyncSession) -> Dict[str, Any]:
+    """Get analytics trends for charts (P2-2)."""
+    # Group by month for the last 6 months
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=180)
+    
+    # Revenue Trend - using sqlite strftime or postgres date_trunc
+    # For now, let's use a simple grouping if possible, but keep it compatible
+    revenue_result = await db.execute(
+        select(
+            func.date(Invoice.created_at).label("day"),
+            func.sum(Invoice.total_amount).label("total")
+        )
+        .where(and_(Invoice.tenant_id == tenant_id, Invoice.created_at >= cutoff_date))
+        .group_by(func.date(Invoice.created_at))
+        .order_by(func.date(Invoice.created_at))
+    )
+    
+    # Job Type Distribution
+    job_type_result = await db.execute(
+        select(JobCard.job_type, func.count(JobCard.id))
+        .where(JobCard.tenant_id == tenant_id)
+        .group_by(JobCard.job_type)
+    )
+    
+    return {
+        "revenue_trend": [{"date": str(r.day), "total": float(r.total)} for r in revenue_result.all()],
+        "job_types": [{"type": r[0], "count": r[1]} for r in job_type_result.all()]
+    }
+
 async def get_fleet_kpis(tenant_id: str, db: AsyncSession) -> FleetKPIs:
     # Vehicle count
     vehicle_result = await db.execute(

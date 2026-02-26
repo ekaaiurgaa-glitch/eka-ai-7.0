@@ -42,3 +42,6 @@ pytest-asyncio
 locust
 
 reportlab>=4.0.0
+# Notifications (P2-3)
+twilio>=9.0.0
+sendgrid>=6.12.0

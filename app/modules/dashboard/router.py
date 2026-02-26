@@ -33,3 +33,12 @@ async def get_owner_dashboard(
     _: dict = Depends(require_role(["customer", "owner"])),
 ):
     return await kpi_service.get_owner_kpis(vehicle_id, tenant_id, db)
+
+@router.get("/analytics")
+async def get_analytics(
+    db: AsyncSession = Depends(get_db),
+    tenant_id: str = Depends(get_tenant_id),
+    _: dict = Depends(require_role(["owner", "manager"])),
+):
+    """Get analytics trends (P2-2)."""
+    return await kpi_service.get_analytics_trends(tenant_id, db)
