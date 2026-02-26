@@ -59,19 +59,19 @@ export default function AnalyticsPage() {
             
             <FeatureGate feature="analytics">
             <div>
-            <div className="main__header" style={{ padding: 0, marginBottom: 24 }}>
-                <select 
-                    className="input" 
-                    style={{ width: 140 }}
-                    value={timeRange}
-                    onChange={e => setTimeRange(e.target.value)}
-                >
-                    <option value="7d">Last 7 Days</option>
-                    <option value="30d">Last 30 Days</option>
-                    <option value="90d">Last 90 Days</option>
-                    <option value="1y">Last Year</option>
-                </select>
-            </div>
+                <div className="main__header" style={{ padding: 0, marginBottom: 24 }}>
+                    <select 
+                        className="input" 
+                        style={{ width: 140 }}
+                        value={timeRange}
+                        onChange={e => setTimeRange(e.target.value)}
+                    >
+                        <option value="7d">Last 7 Days</option>
+                        <option value="30d">Last 30 Days</option>
+                        <option value="90d">Last 90 Days</option>
+                        <option value="1y">Last Year</option>
+                    </select>
+                </div>
 
             {/* Unit Economics KPI Cards */}
             <div className="grid grid--4" style={{ marginBottom: 24 }}>
@@ -260,7 +260,8 @@ export default function AnalyticsPage() {
                     </div>
                 </div>
             </div>
-            </FeatureGate>
         </div>
+        </FeatureGate>
+    </div>
     );
 }
