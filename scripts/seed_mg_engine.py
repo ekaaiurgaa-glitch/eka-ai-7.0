@@ -6,7 +6,11 @@ from app.modules.mg_engine.model import MGFormula, CityIndex
 import os
 from decimal import Decimal
 
-DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./eka_ai.db")
 
 async def seed():
     engine = create_async_engine(DATABASE_URL)
