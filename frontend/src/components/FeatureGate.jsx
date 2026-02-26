@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Lock, Sparkles } from 'lucide-react';
-import { useSubscription, FEATURE_LABELS } from '../context/SubscriptionContext';
+import { useSubscription, FEATURE_LABELS } from '../context';
 import SubscriptionUpgradeModal from './SubscriptionUpgradeModal';
 
-export default function FeatureGate({ 
-    feature, 
-    children, 
+export default function FeatureGate({
+    feature,
+    children,
     fallback = null,
     showUpgradePrompt = true,
 }) {
-    const { hasFeature, canPerformAction, isFree } = useSubscription();
+    const { hasFeature, canPerformAction } = useSubscription();
     const [showUpgrade, setShowUpgrade] = useState(false);
 
     const check = canPerformAction(feature);
@@ -18,10 +18,10 @@ export default function FeatureGate({
     // If user has no access to this feature at all
     if (!hasAccess) {
         if (!showUpgradePrompt) return fallback;
-        
+
         return (
             <>
-                <div 
+                <div
                     style={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -48,10 +48,10 @@ export default function FeatureGate({
                     </div>
                     <h3 style={{ margin: '0 0 8px 0' }}>Premium Feature</h3>
                     <p style={{ color: 'var(--text-muted)', marginBottom: 20, maxWidth: 400 }}>
-                        {FEATURE_LABELS[feature]} is available on paid plans. 
+                        {FEATURE_LABELS[feature]} is available on paid plans.
                         Upgrade to unlock this and other premium features.
                     </p>
-                    <button 
+                    <button
                         className="btn btn--primary"
                         onClick={() => setShowUpgrade(true)}
                     >
@@ -59,9 +59,9 @@ export default function FeatureGate({
                         Upgrade to Unlock
                     </button>
                 </div>
-                <SubscriptionUpgradeModal 
-                    isOpen={showUpgrade} 
-                    onClose={() => setShowUpgrade(false)} 
+                <SubscriptionUpgradeModal
+                    isOpen={showUpgrade}
+                    onClose={() => setShowUpgrade(false)}
                     feature={feature}
                 />
             </>
@@ -72,7 +72,7 @@ export default function FeatureGate({
     if (!check.allowed) {
         return (
             <>
-                <div 
+                <div
                     style={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -92,7 +92,7 @@ export default function FeatureGate({
                         {check.reason}
                     </p>
                     {check.upgrade && (
-                        <button 
+                        <button
                             className="btn btn--primary"
                             onClick={() => setShowUpgrade(true)}
                         >
@@ -101,9 +101,9 @@ export default function FeatureGate({
                         </button>
                     )}
                 </div>
-                <SubscriptionUpgradeModal 
-                    isOpen={showUpgrade} 
-                    onClose={() => setShowUpgrade(false)} 
+                <SubscriptionUpgradeModal
+                    isOpen={showUpgrade}
+                    onClose={() => setShowUpgrade(false)}
                     feature={feature}
                 />
             </>
@@ -129,7 +129,7 @@ export default function FeatureGate({
                         <span style={{ fontSize: '0.86rem' }}>{check.warning}</span>
                     </div>
                     {check.upgrade && (
-                        <button 
+                        <button
                             className="btn btn--ghost btn--sm"
                             onClick={() => setShowUpgrade(true)}
                             style={{ color: 'var(--warning)' }}
@@ -139,9 +139,9 @@ export default function FeatureGate({
                     )}
                 </div>
                 {children}
-                <SubscriptionUpgradeModal 
-                    isOpen={showUpgrade} 
-                    onClose={() => setShowUpgrade(false)} 
+                <SubscriptionUpgradeModal
+                    isOpen={showUpgrade}
+                    onClose={() => setShowUpgrade(false)}
                     feature={feature}
                 />
             </>

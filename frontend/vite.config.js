@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+/* global process */
+
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -10,8 +12,8 @@ export default defineConfig({
       '/api': {
         target: process.env.VITE_BACKEND_URL || 'http://localhost:8001',
         changeOrigin: true,
-        configure: (proxy, options) => {
-          proxy.on('error', (err, req, res) => {
+        configure: (_proxy) => {
+          _proxy.on('error', (err) => {
             console.error('Proxy error:', err.message);
           });
         },

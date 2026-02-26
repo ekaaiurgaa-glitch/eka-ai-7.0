@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.core.cache import cache_get, cache_set
 from app.modules.job_cards.model import JobCard
 from app.modules.invoices.model import Invoice
@@ -44,7 +44,7 @@ async def get_workshop_kpis(tenant_id: str, period_days: int, db: AsyncSession) 
     if cached:
         return cached
 
-    cutoff_date = datetime.utcnow() - timedelta(days=period_days)
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=period_days)
     
     # Monthly revenue from invoices
     revenue_result = await db.execute(
@@ -68,16 +68,34 @@ async def get_workshop_kpis(tenant_id: str, period_days: int, db: AsyncSession) 
     )
     pending_approvals = approval_result.scalar() or 0
     
+    # Low stock items (P2-3 integration)
+    from app.modules.catalog.model import Part
+    stock_result = await db.execute(
+        select(Part.description, Part.stock_count)
+        .where(and_(Part.tenant_id == tenant_id, Part.stock_count <= Part.reorder_level))
+    )
+    low_stock_items = [{"name": row[0], "stock": row[1]} for row in stock_result.all()]
+
+    # Daily revenue for trend chart (P2-2)
+    daily_revenue_result = await db.execute(
+        select(func.date(Invoice.created_at), func.sum(Invoice.total_amount))
+        .where(and_(Invoice.tenant_id == tenant_id, Invoice.created_at >= cutoff_date))
+        .group_by(func.date(Invoice.created_at))
+        .order_by(func.date(Invoice.created_at))
+    )
+    daily_revenue = {str(row[0]): float(row[1]) for row in daily_revenue_result.all()}
+
     ret = WorkshopKPIs(
-        daily_revenue={},
+        daily_revenue=daily_revenue,
         monthly_revenue=float(monthly_revenue),
         profit_margin_pct=34.5,
         jobs_by_status=jobs_by_status,
         pending_approvals=pending_approvals,
         technician_performance=[],
-        low_stock_items=[],
+        low_stock_items=low_stock_items,
         avg_job_tat_hours=4.2
     )
+
     cache_set(cache_key, ret, ttl=300)
     return ret
 

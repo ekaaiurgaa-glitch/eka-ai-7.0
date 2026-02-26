@@ -1,13 +1,14 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 
 class InvoiceLine(BaseModel):
-    part_id: int
+    part_id: Optional[int] = None
+    description: Optional[str] = None
     quantity: int
     price: float
     tax_rate: float
-    hsn_code: str
+    hsn_code: Optional[str] = None
 
 class InvoiceBase(BaseModel):
     job_id: int

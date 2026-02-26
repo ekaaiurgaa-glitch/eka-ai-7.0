@@ -73,20 +73,3 @@ async def create_estimate(
     return await service.create_estimate(db, job_card_id, estimate, tenant_id, current_user["sub"])
 
 
-@router.post("/{job_card_id}/summarize", response_model=schema.SummarizeResponse)
-async def summarize_job_card(
-    job_card_id: int,
-    force_refresh: bool = False,
-    db: AsyncSession = Depends(get_db),
-    tenant_id: str = Depends(get_tenant_id),
-    _: dict = Depends(get_current_user),
-):
-    """
-    Generate AI summary of job card for customer communication.
-    """
-    return await service.summarize_job_card(
-        db=db,
-        job_card_id=job_card_id,
-        tenant_id=tenant_id,
-        force_refresh=force_refresh,
-    )

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TrendingUp, ClipboardList, Clock, DollarSign, Activity, Sparkles, Crown } from 'lucide-react';
-import { useSubscription } from '../context/SubscriptionContext';
+import { useSubscription } from '../context';
 import UsageBar from '../components/UsageBar';
 import SubscriptionUpgradeModal from '../components/SubscriptionUpgradeModal';
 
@@ -25,9 +25,40 @@ const ACTIVITY_ITEMS = [
 ];
 
 export default function DashboardPage() {
-    const { isFree, hasFeature } = useSubscription();
+    const { isFree } = useSubscription();
     const [showUpgrade, setShowUpgrade] = useState(false);
     const [kpis, setKpis] = useState(MOCK_KPIS);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchKpis = async () => {
+            try {
+                const token = localStorage.getItem('eka_token');
+                if (!token) return;
+                const res = await fetch('/api/v1/dashboard/workshop', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setKpis({
+                        monthly_revenue: data.monthly_revenue,
+                        profit_margin_pct: data.profit_margin_pct,
+                        jobs_open: data.jobs_by_status?.OPEN || 0,
+                        jobs_in_progress: (data.jobs_by_status?.DIAGNOSIS || 0) + (data.jobs_by_status?.REPAIR || 0),
+                        jobs_closed_today: data.jobs_by_status?.CLOSED || 0,
+                        pending_approvals: data.pending_approvals,
+                        avg_tat_hours: data.avg_job_tat_hours || 4.2,
+                        mg_contracts_active: 23, // Still mocked as backend doesn't provide
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to fetch KPIs", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchKpis();
+    }, []);
 
     const statCards = [
         { label: 'Monthly Revenue', value: `₹${(kpis.monthly_revenue / 1000).toFixed(0)}K`, icon: DollarSign, color: 'var(--success)' },
@@ -35,6 +66,8 @@ export default function DashboardPage() {
         { label: 'Open Jobs', value: kpis.jobs_open, icon: ClipboardList, color: 'var(--info)' },
         { label: 'Avg TAT', value: `${kpis.avg_tat_hours}h`, icon: Clock, color: 'var(--warning)' },
     ];
+
+    if (loading) return <div style={{ padding: 20 }}>Loading dashboard...</div>;
 
     return (
         <div className="fade-in">
@@ -47,7 +80,7 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     {isFree && (
-                        <button 
+                        <button
                             className="btn btn--primary"
                             onClick={() => setShowUpgrade(true)}
                         >
@@ -67,7 +100,7 @@ export default function DashboardPage() {
 
             {/* Premium Features Promo (for free users) */}
             {isFree && (
-                <div style={{ 
+                <div style={{
                     background: 'linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%)',
                     borderRadius: 12,
                     padding: '20px 24px',
@@ -85,11 +118,11 @@ export default function DashboardPage() {
                             Get MG Calculator, Advanced Analytics, Operator AI, and more
                         </div>
                     </div>
-                    <button 
+                    <button
                         className="btn"
                         onClick={() => setShowUpgrade(true)}
-                        style={{ 
-                            background: 'white', 
+                        style={{
+                            background: 'white',
                             color: 'var(--accent)',
                             fontWeight: 600,
                         }}
@@ -166,9 +199,9 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            <SubscriptionUpgradeModal 
-                isOpen={showUpgrade} 
-                onClose={() => setShowUpgrade(false)} 
+            <SubscriptionUpgradeModal
+                isOpen={showUpgrade}
+                onClose={() => setShowUpgrade(false)}
             />
         </div>
     );

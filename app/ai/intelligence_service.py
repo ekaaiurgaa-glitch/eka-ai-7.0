@@ -65,35 +65,9 @@ async def _mock_intelligence_response(query: str) -> dict:
         "confidence_level": 95
     }
 
-async def parse_operator_intent(query: str) -> dict:
-    """
-    Parses natural language query into operator intent and args (P1-10).
-    """
-    prompt = f"""You are the EKA Operator Parser. Convert natural language into a tool call JSON.
-Possible tools: 
-- create_job_card(vehicle_number, complaint)
-- generate_invoice(job_no)
-- create_mg_contract(vehicle_id, customer_id)
-- record_payment(job_no, amount, method)
-- register_inventory(part_name, qty, price)
-- generate_report(report_type, month)
-- trigger_state_transition(job_no, new_state)
-
-Query: \"{query}\"
-Return ONLY JSON. Example: {{"intent": "create_job_card", "args": {{"vehicle_number": "KA01", "complaint": "noise"}}}}
-JSON:"""
-    client = LLMClient()
-    res = await client.complete([{"role": "user", "content": prompt}], temperature=0.1)
-    
-    import json
-    import re
-    # Extract JSON between curly braces if LLM adds text
-    match = re.search(r'(\{.*\})', res.content, re.DOTALL)
-    if match:
-        return json.loads(match.group(1))
-    return json.loads(res.content)
-
 async def process_chat_query(query: str, vehicle_context: Dict[str, Any], tenant_id: str) -> ChatResponse:
+
+
     # 1. Run all 4 governance gates
     await domain_gate(query)
     context_gate(query, vehicle_context)

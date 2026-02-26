@@ -39,7 +39,7 @@ export const api = {
       }
       try {
         return JSON.parse(text);
-      } catch (e) {
+      } catch {
         throw new Error('An unexpected error occurred. Please try again.');
       }
     });
@@ -49,10 +49,10 @@ export const api = {
   chatQuery: (query, vehicle) => request('POST', '/chat/query', { query, vehicle }),
 
   // Jobs
-  listJobs: (state) => request('GET', `/jobs${state ? `?state=${state}` : ''}`),
-  getJob: (id) => request('GET', `/jobs/${id}`),
-  createJob: (data) => request('POST', '/jobs', data),
-  transitionJob: (id, newState) => request('PATCH', `/jobs/${id}/transition`, { new_state: newState }),
+  listJobs: (state) => request('GET', `/job-cards${state ? `?state=${state}` : ''}`),
+  getJob: (id) => request('GET', `/job-cards/${id}`),
+  createJob: (data) => request('POST', '/job-cards', data),
+  transitionJob: (id, newState) => request('PATCH', `/job-cards/${id}/transition`, { new_state: newState }),
 
   // Vehicles
   listVehicles: () => request('GET', '/vehicles'),

@@ -9,7 +9,7 @@ async def test_create_invoice(client: AsyncClient, auth_headers: dict, db_sessio
 
     vehicle = await v_service.create_vehicle(
         db_session,
-        v_schema.VehicleCreate(plate_number="INV001", make="Maruti", model="Swift", year=2019, fuel_type=v_schema.FuelType.petrol),
+        v_schema.VehicleCreate(plate_number="INV001", make="Maruti", model="Swift", variant="VXI", year=2019, fuel_type=v_schema.FuelType.petrol),
         "test_tenant",
     )
     job = await j_service.create_job_card(
@@ -44,7 +44,7 @@ async def test_get_invoice(client: AsyncClient, auth_headers: dict, db_session):
 
     vehicle = await v_service.create_vehicle(
         db_session,
-        v_schema.VehicleCreate(plate_number="INV002", make="Honda", model="City", year=2020, fuel_type=v_schema.FuelType.diesel),
+        v_schema.VehicleCreate(plate_number="INV002", make="Honda", model="City", variant="VX", year=2020, fuel_type=v_schema.FuelType.diesel),
         "test_tenant",
     )
     job = await j_service.create_job_card(

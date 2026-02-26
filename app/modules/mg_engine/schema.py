@@ -20,6 +20,7 @@ class UsageType(str, Enum):
 class MGCalculationRequest(BaseModel):
     make: str
     model: str
+    variant: Optional[str] = None
     year: int
     fuel_type: FuelType
     city: str

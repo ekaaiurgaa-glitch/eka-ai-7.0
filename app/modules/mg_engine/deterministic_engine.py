@@ -12,6 +12,7 @@ from . import schema
 # Production: rows seeded via admin panel or migration.
 WEAR_TEAR_MATRIX = {
     "Tata_Nexon_diesel": {"annual_parts_cost": 48000, "annual_labor_cost": 24000},
+    "Tata_Nexon_XZ+_diesel": {"annual_parts_cost": 52000, "annual_labor_cost": 26000},
     "default": {"annual_parts_cost": 40000, "annual_labor_cost": 20000},
 }
 
@@ -72,7 +73,11 @@ def calculate_mg(request: schema.MGCalculationRequest) -> schema.MGCalculationRe
     """
     Pure-sync deterministic MG calculation using in-memory matrices.
     """
-    vehicle_key = f"{request.make}_{request.model}_{request.fuel_type.value}"
+    vehicle_key_parts = [request.make, request.model]
+    if request.variant:
+        vehicle_key_parts.append(request.variant)
+    vehicle_key_parts.append(request.fuel_type.value)
+    vehicle_key = "_".join(vehicle_key_parts)
     wear_tear_costs = _get_wear_tear_costs(vehicle_key)
 
     annual_parts = wear_tear_costs["annual_parts_cost"]
@@ -211,12 +216,14 @@ async def calculate_mg_service(db, request: schema.MGCalculationRequest) -> sche
     """
     from . import model as mg_model
     
-    # Try DB lookup first
     stmt = select(mg_model.MGFormula).where(
         mg_model.MGFormula.make == request.make,
         mg_model.MGFormula.model == request.model,
         mg_model.MGFormula.fuel_type == request.fuel_type.value
     )
+    if request.variant:
+        stmt = stmt.where(mg_model.MGFormula.variant == request.variant)
+
     result = await db.execute(stmt)
     formula = result.scalar_one_or_none()
 
@@ -226,7 +233,11 @@ async def calculate_mg_service(db, request: schema.MGCalculationRequest) -> sche
             "annual_labor_cost": float(formula.annual_base_cost_inr * formula.labor_pct / 100)
         }
     else:
-        vehicle_key = f"{request.make}_{request.model}_{request.fuel_type.value}"
+        vehicle_key_parts = [request.make, request.model]
+        if request.variant:
+            vehicle_key_parts.append(request.variant)
+        vehicle_key_parts.append(request.fuel_type.value)
+        vehicle_key = "_".join(vehicle_key_parts)
         costs = WEAR_TEAR_MATRIX.get(vehicle_key, WEAR_TEAR_MATRIX["default"])
 
     # City index from DB

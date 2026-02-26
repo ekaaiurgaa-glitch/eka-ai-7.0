@@ -15,6 +15,7 @@ class VehicleBase(BaseModel):
     plate_number: str
     make: str
     model: str
+    variant: str
     year: int
     fuel_type: FuelType
     vin: Optional[str] = None
@@ -27,6 +28,7 @@ class VehicleCreate(VehicleBase):
 
 
 class VehicleUpdate(BaseModel):
+    variant: Optional[str] = None
     plate_number: Optional[str] = None
     owner_name: Optional[str] = None
     monthly_km: Optional[int] = None

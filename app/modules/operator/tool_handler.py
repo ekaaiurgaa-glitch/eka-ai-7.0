@@ -9,7 +9,7 @@ from app.modules.job_cards.schema import JobCardCreate
 from app.modules.job_cards.model import Estimate
 from app.modules.invoices.service import create_invoice
 from app.modules.invoices.schema import InvoiceCreate, InvoiceLine
-from app.ai.intelligence_service import parse_operator_intent
+from .intent_parser import intent_parser
 from app.subscriptions.service import record_usage, check_subscription_limits
 
 
@@ -17,13 +17,14 @@ async def generate_preview(db: AsyncSession, request: schema.OperatorExecuteRequ
     # Check limits
     await check_subscription_limits(db, request.tenant_id, "operator_actions")
     
-    # NLP Detection (P1-10)
+    # NLP Detection (P1-10/P1-3)
     tokens = 0
     if request.raw_query and not request.intent:
-        parsed = await parse_operator_intent(request.raw_query)
+        parsed = await intent_parser.parse_query(request.raw_query)
         request.intent = parsed.get("intent")
         request.args = parsed.get("args", {})
         tokens = 100 # Simulated NLP token cost
+
 
     preview_id = str(uuid.uuid4())
     tool = request.intent

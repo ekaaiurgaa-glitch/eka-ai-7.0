@@ -10,7 +10,7 @@ from app.db.models import AuditLog
 
 ALLOWED_TRANSITIONS = {
     "OPEN": ["DIAGNOSIS", "CANCELLED"],
-    "DIAGNOSIS": ["ESTIMATE_PENDING", "CANCELLED"],
+    "DIAGNOSIS": ["ESTIMATE_PENDING", "APPROVAL_PENDING", "CANCELLED"],
     "ESTIMATE_PENDING": ["APPROVAL_PENDING", "CANCELLED"],
     "APPROVAL_PENDING": ["APPROVED", "REJECTED", "CANCELLED"],
     "APPROVED": ["REPAIR", "CANCELLED"],
@@ -116,6 +116,30 @@ async def transition_job_card_state(db: AsyncSession, job_card_id: int, new_stat
 
     db_job_card.state = new_state
     await _log_audit(db, "job_card", db_job_card.id, user_id, "transition_state", {"old_state": old_state, "new_state": new_state}, tenant_id)
+    
+    # Trigger side effects
+    if new_state == "REPAIR":
+        from app.modules.catalog.service import deduct_inventory
+        # Get approved estimate for this job
+        res_est = await db.execute(
+            select(model.Estimate).filter(
+                model.Estimate.job_id == job_card_id,
+                model.Estimate.approved == sa.true() # Using sa.true() for clarity
+            )
+        )
+        est = res_est.scalar_one_or_none()
+        if est and est.lines:
+            for line in est.lines:
+                p_id = line.get("part_id")
+                p_qty = line.get("quantity", 0)
+                if p_id and p_qty:
+                    await deduct_inventory(db, p_id, int(p_qty), tenant_id)
+
+    if new_state == "INVOICED":
+        from app.modules.invoices.service import generate_invoice_from_job_card
+        await generate_invoice_from_job_card(db, job_card_id, tenant_id)
+
+
     await db.commit()
     await db.refresh(db_job_card)
     return db_job_card
@@ -154,11 +178,42 @@ async def create_estimate(db: AsyncSession, job_card_id: int, estimate: schema.E
     await db.commit()
     await db.refresh(db_estimate)
 
-    await transition_job_card_state(db, job_card_id, "ESTIMATE_PENDING", tenant_id, user_id)
+    # 4. Approval Rules Engine (P1-4)
+    from app.approvals.models import ApprovalRule
+    
+    total_estimate = total_parts + total_labor
+    
+    # Check for active rules
+    stmt = select(ApprovalRule).where(
+        sa.and_(
+            ApprovalRule.tenant_id == tenant_id,
+            ApprovalRule.is_active == True,
+            ApprovalRule.rule_type == "estimate_value"
+        )
+    )
+    rules_result = await db.execute(stmt)
+    rules = rules_result.scalars().all()
+    
+    requires_approval = False
+    if not rules:
+        # P1 Fallback: Default threshold of 10k
+        requires_approval = total_estimate > 10000
+    else:
+        for rule in rules:
+            if rule.trigger_approval(total_estimate):
+                requires_approval = True
+                break
+                
+    if requires_approval:
+        await transition_job_card_state(db, job_card_id, "APPROVAL_PENDING", tenant_id, user_id)
+    else:
+        await transition_job_card_state(db, job_card_id, "ESTIMATE_PENDING", tenant_id, user_id)
+
     await _log_audit(db, "estimate", db_estimate.id, user_id, "create",
-                     {"total_parts": total_parts, "total_labor": total_labor}, tenant_id)
+                     {"total_parts": total_parts, "total_labor": total_labor, "requires_approval": requires_approval}, tenant_id)
     await db.commit()
     return db_estimate
+
 
 
 async def summarize_job_card(

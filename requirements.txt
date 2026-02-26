@@ -40,3 +40,5 @@ opentelemetry-exporter-otlp-proto-grpc
 # Testing
 pytest-asyncio
 locust
+
+reportlab>=4.0.0

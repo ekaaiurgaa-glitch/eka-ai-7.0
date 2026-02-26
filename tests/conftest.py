@@ -159,7 +159,7 @@ async def test_job_card(async_client, auth_token):
     # First create a vehicle
     v_res = await async_client.post(
         "/api/v1/vehicles/",
-        json={"plate_number": "MH01AB1234", "make": "Tata", "model": "Nexon", "year": 2022, "fuel_type": "petrol"},
+        json={"plate_number": "MH01AB1234", "make": "Tata", "model": "Nexon", "variant": "XZ", "year": 2022, "fuel_type": "petrol"},
         headers={"Authorization": f"Bearer {auth_token}"}
     )
     if v_res.status_code != 201:

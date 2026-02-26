@@ -9,7 +9,7 @@ async def test_workshop_dashboard(client: AsyncClient, auth_headers: dict, db_se
 
     vehicle = await v_service.create_vehicle(
         db_session,
-        v_schema.VehicleCreate(plate_number="DASH1", make="Maruti", model="Swift", year=2019, fuel_type=v_schema.FuelType.petrol),
+        v_schema.VehicleCreate(plate_number="DASH1", make="Maruti", model="Swift", variant="VXI", year=2019, fuel_type=v_schema.FuelType.petrol),
         "test_tenant",
     )
     await j_service.create_job_card(
@@ -41,7 +41,7 @@ async def test_owner_dashboard_with_vehicle_id(client: AsyncClient, auth_headers
 
     vehicle = await v_service.create_vehicle(
         db_session,
-        v_schema.VehicleCreate(plate_number="OWNER1", make="Honda", model="City", year=2020, fuel_type=v_schema.FuelType.diesel),
+        v_schema.VehicleCreate(plate_number="OWNER1", make="Honda", model="City", variant="VX", year=2020, fuel_type=v_schema.FuelType.diesel),
         "test_tenant",
     )
     await j_service.create_job_card(

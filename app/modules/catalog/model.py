@@ -18,6 +18,9 @@ class Part(Base, TenantMixin, TimestampMixin):
     hsn_code = Column(String, nullable=False)
     unit_price = Column(Float, nullable=False)
     gst_rate = Column(Float, default=18.0)
+    stock_count = Column(Integer, default=0)
+    reorder_level = Column(Integer, default=5)
+
 
 
 class LaborRate(Base, TenantMixin, TimestampMixin):

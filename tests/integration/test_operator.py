@@ -8,7 +8,7 @@ async def test_operator_execute_generates_preview(client: AsyncClient, auth_head
 
     vehicle = await service.create_vehicle(
         db_session,
-        schema.VehicleCreate(plate_number="OP123", make="Maruti", model="Swift", year=2019, fuel_type=schema.FuelType.petrol),
+        schema.VehicleCreate(plate_number="OP123", make="Maruti", model="Swift", variant="VXI", year=2019, fuel_type=schema.FuelType.petrol),
         "test_tenant",
     )
 
@@ -35,7 +35,7 @@ async def test_operator_confirm_success(client: AsyncClient, auth_headers: dict,
 
     vehicle = await service.create_vehicle(
         db_session,
-        schema.VehicleCreate(plate_number="OP456", make="Honda", model="City", year=2020, fuel_type=schema.FuelType.diesel),
+        schema.VehicleCreate(plate_number="OP456", make="Honda", model="City", variant="VX", year=2020, fuel_type=schema.FuelType.diesel),
         "test_tenant",
     )
 

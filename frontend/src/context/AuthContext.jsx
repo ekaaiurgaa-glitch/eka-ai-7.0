@@ -1,21 +1,16 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { api } from '../api';
-
-const AuthContext = createContext(null);
+import { AuthContext } from './AuthContextObject';
 
 export function AuthProvider({ children }) {
     const [token, setToken] = useState(() => localStorage.getItem('eka_token'));
-    const [user, setUser] = useState(null);
 
-    useEffect(() => {
-        if (token) {
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                setUser({ sub: payload.sub, tenant_id: payload.tenant_id, role: payload.role, permissions: payload.permissions });
-            } catch { setUser(null); }
-        } else {
-            setUser(null);
-        }
+    const user = useMemo(() => {
+        if (!token) return null;
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return { sub: payload.sub, tenant_id: payload.tenant_id, role: payload.role, permissions: payload.permissions };
+        } catch { return null; }
     }, [token]);
 
     const login = async (username, password) => {
@@ -31,7 +26,6 @@ export function AuthProvider({ children }) {
     const logout = () => {
         localStorage.removeItem('eka_token');
         setToken(null);
-        setUser(null);
     };
 
     return (
@@ -40,5 +34,3 @@ export function AuthProvider({ children }) {
         </AuthContext.Provider>
     );
 }
-
-export const useAuth = () => useContext(AuthContext);

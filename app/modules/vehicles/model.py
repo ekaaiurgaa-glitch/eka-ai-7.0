@@ -16,6 +16,7 @@ class Vehicle(Base, TenantMixin, TimestampMixin):
     plate_number = Column(String, index=True)
     make = Column(String, nullable=False)
     model = Column(String, nullable=False)
+    variant = Column(String, nullable=True)
     year = Column(Integer, nullable=False)
     fuel_type = Column(SAEnum(FuelTypeEnum), nullable=False)
     vin = Column(String, unique=True, index=True, nullable=True)

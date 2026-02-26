@@ -1,5 +1,5 @@
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config, pool, create_engine
 from alembic import context
 import os
 import sys
@@ -36,21 +36,12 @@ def run_migrations_offline():
         context.run_migrations()
 
 def run_migrations_online():
-    # Use environment variable if present, else config file
-    db_url = os.environ.get("DATABASE_URL")
-    if db_url:
-        from sqlalchemy import create_engine
-        connectable = create_engine(db_url)
-    else:
-        connectable = engine_from_config(
-            config.get_section(config.config_ini_section),
-            prefix="sqlalchemy.",
-            poolclass=pool.NullPool,
-        )
-
-    with connectable.connect() as connection:
+    # Directly create a synchronous engine for SQLite
+    engine = create_engine("sqlite+pysqlite:///./eka_ai.db")
+    with engine.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata
         )
         with context.begin_transaction():
             context.run_migrations()

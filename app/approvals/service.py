@@ -94,3 +94,23 @@ async def process_approval_response(db: AsyncSession, token: str, decision: str,
     # Handle state transition logic and emit RabbitMQ event
     
     return approval
+
+async def list_approval_rules(db: AsyncSession, tenant_id: str):
+    from app.approvals.models import ApprovalRule
+    result = await db.execute(select(ApprovalRule).where(ApprovalRule.tenant_id == tenant_id))
+    return result.scalars().all()
+
+async def create_approval_rule(db: AsyncSession, name: str, threshold: str, tenant_id: str):
+    from app.approvals.models import ApprovalRule
+    rule = ApprovalRule(
+        rule_name=name,
+        rule_type="estimate_value",
+        threshold_value=threshold,
+        tenant_id=tenant_id,
+        is_active=True
+    )
+    db.add(rule)
+    await db.commit()
+    await db.refresh(rule)
+    return rule
+

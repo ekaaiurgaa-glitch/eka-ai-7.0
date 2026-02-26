@@ -76,3 +76,30 @@ async def create_labor_rate(db: AsyncSession, rate: schema.LaborRateCreate, tena
     await db.commit()
     await db.refresh(db_rate)
     return db_rate
+
+
+async def deduct_inventory(db: AsyncSession, part_id: int, quantity: int, tenant_id: str):
+    """Simple stock deduction logic (P2-3)."""
+    result = await db.execute(
+        select(model.Part).filter(model.Part.id == part_id, model.Part.tenant_id == tenant_id)
+    )
+    part = result.scalar_one_or_none()
+    if not part:
+        return
+    part.stock_count -= quantity
+    if part.stock_count < 0:
+        # Business policy: Allow negative but log warning
+        pass
+    await db.commit()
+
+
+async def restock_inventory(db: AsyncSession, part_id: int, quantity: int, tenant_id: str):
+    result = await db.execute(
+        select(model.Part).filter(model.Part.id == part_id, model.Part.tenant_id == tenant_id)
+    )
+    part = result.scalar_one_or_none()
+    if not part:
+        return
+    part.stock_count += quantity
+    await db.commit()
+

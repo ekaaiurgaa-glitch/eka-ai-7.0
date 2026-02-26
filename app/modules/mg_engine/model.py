@@ -14,6 +14,7 @@ class MGFormula(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
     make = Column(String, nullable=False)
     model = Column(String, nullable=False)
+    variant = Column(String, nullable=True)
     fuel_type = Column(String, nullable=False)
     annual_base_cost_inr = Column(Numeric(12, 2), nullable=False)
     parts_pct = Column(Numeric(5, 2), nullable=False, default=65.0)

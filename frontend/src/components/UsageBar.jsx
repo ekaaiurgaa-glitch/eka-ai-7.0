@@ -1,13 +1,13 @@
-import { useSubscription } from '../context/SubscriptionContext';
+import { useSubscription } from '../context';
 import { AlertTriangle, Zap, MessageSquare, ClipboardList } from 'lucide-react';
 
 export default function UsageBar() {
     const { usage, currentPlan, getUsageDisplay, isFree } = useSubscription();
-    
+
     if (!usage || !currentPlan) return null;
 
     const usageData = getUsageDisplay();
-    
+
     const getIcon = (label) => {
         switch (label) {
             case 'AI Tokens': return MessageSquare;
@@ -18,26 +18,26 @@ export default function UsageBar() {
     };
 
     return (
-        <div style={{ 
-            background: 'var(--bg-glass)', 
-            borderRadius: 12, 
+        <div style={{
+            background: 'var(--bg-glass)',
+            borderRadius: 12,
             padding: '16px 20px',
             marginBottom: 20,
             border: '1px solid var(--border-glass)',
         }}>
-            <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
                 alignItems: 'center',
                 marginBottom: 16,
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontWeight: 600 }}>Usage This Cycle</span>
                     {isFree && (
-                        <span 
+                        <span
                             className="badge"
-                            style={{ 
-                                background: 'var(--warning)', 
+                            style={{
+                                background: 'var(--warning)',
                                 color: 'white',
                                 fontSize: '0.65rem',
                             }}
@@ -46,7 +46,7 @@ export default function UsageBar() {
                         </span>
                     )}
                 </div>
-                <button 
+                <button
                     className="btn btn--ghost btn--sm"
                     onClick={() => window.location.href = '/app/subscription'}
                 >
@@ -61,12 +61,12 @@ export default function UsageBar() {
                     const percent = isUnlimited ? 0 : Math.min(item.percent, 100);
                     const isNearLimit = !isUnlimited && percent >= 80;
                     const isAtLimit = !isUnlimited && percent >= 100;
-                    
+
                     return (
                         <div key={item.label}>
-                            <div style={{ 
-                                display: 'flex', 
-                                justifyContent: 'space-between', 
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
                                 alignItems: 'center',
                                 marginBottom: 6,
                             }}>
@@ -74,9 +74,9 @@ export default function UsageBar() {
                                     <Icon size={14} color="var(--text-muted)" />
                                     <span style={{ fontSize: '0.84rem' }}>{item.label}</span>
                                     {(isNearLimit || isAtLimit) && (
-                                        <AlertTriangle 
-                                            size={14} 
-                                            color={isAtLimit ? 'var(--danger)' : 'var(--warning)'} 
+                                        <AlertTriangle
+                                            size={14}
+                                            color={isAtLimit ? 'var(--danger)' : 'var(--warning)'}
                                         />
                                     )}
                                 </div>
@@ -85,7 +85,7 @@ export default function UsageBar() {
                                         <span style={{ color: 'var(--success)' }}>Unlimited</span>
                                     ) : (
                                         <>
-                                            <strong style={{ 
+                                            <strong style={{
                                                 color: isAtLimit ? 'var(--danger)' : isNearLimit ? 'var(--warning)' : 'inherit'
                                             }}>
                                                 {item.current.toLocaleString()}
@@ -98,17 +98,17 @@ export default function UsageBar() {
                                     )}
                                 </div>
                             </div>
-                            
+
                             {!isUnlimited && (
-                                <div style={{ 
-                                    height: 6, 
-                                    borderRadius: 3, 
+                                <div style={{
+                                    height: 6,
+                                    borderRadius: 3,
                                     background: 'var(--bg-primary)',
                                     overflow: 'hidden',
                                 }}>
-                                    <div style={{ 
-                                        height: '100%', 
-                                        width: `${percent}%`, 
+                                    <div style={{
+                                        height: '100%',
+                                        width: `${percent}%`,
                                         borderRadius: 3,
                                         background: isAtLimit ? 'var(--danger)' : isNearLimit ? 'var(--warning)' : 'var(--accent)',
                                         transition: 'width 0.3s ease, background 0.3s ease',
@@ -121,16 +121,16 @@ export default function UsageBar() {
             </div>
 
             {isFree && (
-                <div style={{ 
-                    marginTop: 16, 
-                    padding: '12px 16px', 
-                    background: 'rgba(99,102,241,0.1)', 
+                <div style={{
+                    marginTop: 16,
+                    padding: '12px 16px',
+                    background: 'rgba(99,102,241,0.1)',
                     borderRadius: 8,
                     border: '1px dashed var(--accent)',
                 }}>
-                    <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
                         justifyContent: 'space-between',
                     }}>
                         <div style={{ fontSize: '0.84rem' }}>
@@ -139,7 +139,7 @@ export default function UsageBar() {
                                 Upgrade to access MG Calculator, Analytics, and more
                             </div>
                         </div>
-                        <button 
+                        <button
                             className="btn btn--primary btn--sm"
                             onClick={() => window.upgradeModal?.open?.()}
                         >
