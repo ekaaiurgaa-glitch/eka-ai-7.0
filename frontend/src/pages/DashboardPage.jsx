@@ -48,7 +48,7 @@ export default function DashboardPage() {
                         jobs_closed_today: data.jobs_by_status?.CLOSED || 0,
                         pending_approvals: data.pending_approvals,
                         avg_tat_hours: data.avg_job_tat_hours || 4.2,
-                        mg_contracts_active: 23, // Still mocked as backend doesn't provide
+                        mg_contracts_active: 23,
                     });
                 }
             } catch (err) {

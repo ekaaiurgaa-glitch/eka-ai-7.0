@@ -62,7 +62,19 @@ export const api = {
   calculateMG: (data) => request('POST', '/mg/calculate', data),
 
   // Dashboard
-  workshopDashboard: () => request('GET', '/dashboards/workshop'),
+  workshopDashboard: () => request('GET', '/dashboard/workshop'),
+
+  // Invoices
+  listInvoices: () => request('GET', '/invoices'),
+  getInvoice: (id) => request('GET', `/invoices/${id}`),
+  getInvoiceByJob: (jobId) => request('GET', `/invoices/job/${jobId}`),
+  createInvoice: (data) => request('POST', '/invoices', data),
+  markInvoicePaid: (id) => request('POST', `/invoices/${id}/pay`),
+
+  // Approvals
+  listApprovals: () => request('GET', '/approvals'),
+  respondToApproval: (token, decision, reason) => 
+    request('POST', `/approvals/${token}/respond`, { decision, rejection_reason: reason }),
 
   // Health
   health: () => fetch('/health').then(r => r.json()),
